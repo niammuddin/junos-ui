@@ -1,3 +1,44 @@
+# Junos UI
+
+**Junos UI** adalah aplikasi berbasis **Python** yang dirancang untuk mempermudah monitoring dan manajemen router **Juniper** melalui **REST API** dan **gRPC**.  
+
+Aplikasi ini sudah diuji dengan perangkat **Juniper MX204**, serta mendukung **multi-device** (lebih dari satu router dapat dipantau secara bersamaan).
+
+---
+
+## ✨ Fitur Utama
+
+- 🔎 **System Information** – Menampilkan informasi sistem dasar router  
+- ⚙️ **Route Engine** – Monitoring status dan performa route engine  
+- 📡 **BGP Summary** – Ringkasan informasi sesi BGP  
+- 🔍 **BGP Neighbor Detail** – Informasi detail setiap neighbor BGP  
+- 📝 **Policy Option - Policy Statement** – Melihat konfigurasi policy statement  
+- 🛣️ **Static Route** – Monitoring static route yang dikonfigurasi  
+- 🌐 **View Interface** – Melihat daftar interface dan statusnya  
+- 📊 **Live Traffic Monitoring (gRPC)** – Memantau trafik secara real-time berdasarkan interface menggunakan gRPC  
+
+---
+
+## 🚀 Roadmap
+
+Fitur akan terus bertambah seiring berkembangnya kebutuhan dan jumlah pengguna.  
+Jika aplikasi ini mendapat banyak peminat, maka akan dilakukan pengembangan lebih lanjut (fitur baru, optimasi performa, dan integrasi tambahan).
+
+---
+
+## 🖥️ Kompatibilitas
+
+- ✅ Sudah diuji dengan **Juniper MX204**  
+- 🔄 Potensial mendukung perangkat Juniper lain dengan fitur serupa  
+
+---
+
+## 📢 Kontribusi & Feedback
+
+Aplikasi ini masih dalam tahap pengembangan aktif.  
+Feedback, request fitur, atau kontribusi sangat terbuka untuk meningkatkan fungsionalitas **Junos UI**.
+
+<br/><br/>
 # 🚀 Panduan Deploy Junos UI
 
 ## 1. Clone Repository
@@ -120,6 +161,19 @@ sudo systemctl status junos-ui
 
 Aplikasi akan berjalan di `http://127.0.0.1:8000`
 
-<br/>
+<br/><br/>
+
+# 🚀 Konfig Perangkat Juniper
+
+```bash
+set system services extension-service request-response grpc clear-text port 9339
+set system services extension-service request-response grpc max-connections 8
+set system services extension-service request-response grpc skip-authentication
+set system services rest http port 3443
+```
+Sesuaikan rest API menggunakan http/https dan PORT
+
+
+
 
 
