@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-edit"></i> Edit Device: {{ device.name }}</h2>
+    <a href="{{ url_for('juniper.devices') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Kembali ke Devices
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Edit Device Configuration</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Nama Device *</label>
+                                <input type="text" class="form-control" id="name" name="name" 
+                                       value="{{ device.name }}" required maxlength="100">
+                                <div class="form-text">Nama unik untuk device</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="ip_address" class="form-label">IP Address *</label>
+                                <input type="text" class="form-control" id="ip_address" name="ip_address" 
+                                       value="{{ device.ip_address }}" required>
+                                <div class="form-text">Alamat IP device</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username *</label>
+                                <input type="text" class="form-control" id="username" name="username" 
+                                       value="{{ device.username }}" required>
+                                <div class="form-text">Username untuk login ke device</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="password" name="password" 
+                                       placeholder="Isi untuk mengubah password">
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle"></i> Biarkan kosong jika tidak ingin mengubah password.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border rounded p-3 mb-3">
+                        <h6 class="mb-2"><i class="fas fa-link me-1"></i> REST API</h6>
+                        <div class="mb-2">
+                            <label for="api_port" class="form-label">API Port</label>
+                            <input type="number" class="form-control" id="api_port" name="api_port" 
+                                   value="{{ device.api_port }}" min="1" max="65535">
+                        </div>
+                        <div class="form-check form-switch">
+                            <input type="hidden" name="api_use_ssl" value="0">
+                            <input class="form-check-input" type="checkbox" id="editApiUseSsl" name="api_use_ssl" value="1" {% if device.api_use_ssl %}checked{% endif %}>
+                            <label class="form-check-label" for="editApiUseSsl">Gunakan HTTPS</label>
+                        </div>
+                        <div class="form-check form-switch mt-2">
+                            <input type="hidden" name="api_verify_ssl" value="0">
+                            <input class="form-check-input" type="checkbox" id="editApiVerifySsl" name="api_verify_ssl" value="1" {% if device.api_verify_ssl %}checked{% endif %}>
+                            <label class="form-check-label" for="editApiVerifySsl">Verifikasi Sertifikat SSL</label>
+                        </div>
+                    </div>
+
+                    <div class="border rounded p-3 mb-3">
+                        <h6 class="mb-2"><i class="fas fa-exchange-alt me-1"></i> gRPC / gNMI</h6>
+                        <div class="form-text mb-2 mt-n2">Digunakan untuk monitoring live traffic.</div>
+                        <div class="mb-2">
+                            <label for="gnmi_port" class="form-label">Port gNMI</label>
+                            <input type="number" class="form-control" id="gnmi_port" name="gnmi_port" value="{{ device.gnmi_port or 9339 }}" min="1" max="65535">
+                        </div>
+                        <div class="form-check form-switch">
+                            <input type="hidden" name="gnmi_use_ssl" value="0">
+                            <input class="form-check-input" type="checkbox" id="editGnmiUseSsl" name="gnmi_use_ssl" value="1" {% if device.gnmi_use_ssl %}checked{% endif %}>
+                            <label class="form-check-label" for="editGnmiUseSsl">Gunakan TLS untuk gNMI</label>
+                        </div>
+                        <div class="form-check form-switch mt-2">
+                            <input type="hidden" name="gnmi_verify_ssl" value="0">
+                            <input class="form-check-input" type="checkbox" id="editGnmiVerifySsl" name="gnmi_verify_ssl" value="1" {% if device.gnmi_verify_ssl %}checked{% endif %}>
+                            <label class="form-check-label" for="editGnmiVerifySsl">Verifikasi Sertifikat gNMI</label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" 
+                                  rows="3" placeholder="Keterangan tentang device...">{{ device.description or '' }}</textarea>
+                        <div class="form-text">Deskripsi optional untuk device</div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('juniper.devices') }}" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-times"></i> Batal
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Update Device
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Device Information Card -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Informasi Device</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-sm">
+                            <tr>
+                                <th><i class="fas fa-calendar-plus"></i> Dibuat:</th>
+                                <td>{{ device.created_at|default('-') }}</td>
+                            </tr>
+                            <tr>
+                                <th><i class="fas fa-calendar-check"></i> Diupdate:</th>
+                                <td>{{ device.updated_at|default('-') }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-lightbulb"></i> Tips:</h6>
+                            <ul class="mb-0">
+                                <li>Biarkan password kosong jika tidak ingin mengubahnya.</li>
+                                <li>Nama device harus unik.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

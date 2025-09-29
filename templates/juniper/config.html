@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h2><i class="fas fa-cog"></i> Konfigurasi Device</h2>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Tambah Device Baru</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('juniper.config') }}">
+                    <input type="hidden" name="action" value="add">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Nama Device</label>
+                        <input type="text" class="form-control" name="name" required 
+                               placeholder="Router-JKT-01">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">IP Address</label>
+                        <input type="text" class="form-control" name="ip_address" required 
+                               placeholder="192.168.1.1">
+                    </div>
+
+                    <div class="border rounded p-3 mb-3">
+                        <h6 class="mb-2"><i class="fas fa-link me-1"></i> REST API</h6>
+                        <div class="mb-2">
+                            <label class="form-label">API Port</label>
+                            <input type="number" class="form-control" name="api_port" value="{{ defaults.api_default_port }}">
+                        </div>
+                        <div class="form-check form-switch">
+                            <input type="hidden" name="api_use_ssl" value="0">
+                            <input class="form-check-input" type="checkbox" id="addApiUseSsl" name="api_use_ssl" value="1" {% if defaults.api_use_ssl %}checked{% endif %}>
+                            <label class="form-check-label" for="addApiUseSsl">Gunakan HTTPS</label>
+                        </div>
+                        <div class="form-check form-switch mt-2">
+                            <input type="hidden" name="api_verify_ssl" value="0">
+                            <input class="form-check-input" type="checkbox" id="addApiVerifySsl" name="api_verify_ssl" value="1" {% if defaults.api_verify_ssl %}checked{% endif %}>
+                            <label class="form-check-label" for="addApiVerifySsl">Verifikasi Sertifikat SSL</label>
+                        </div>
+                    </div>
+                    
+                    <div class="border rounded p-3 mb-3">
+                        <h6 class="mb-2"><i class="fas fa-exchange-alt me-1"></i> gRPC / gNMI</h6>
+                        <div class="form-text mb-2 mt-n2">Digunakan untuk monitoring live traffic.</div>
+                        <div class="mb-2">
+                            <label class="form-label">Port gNMI</label>
+                            <input type="number" class="form-control" name="gnmi_port" value="{{ defaults.gnmi_default_port }}" min="1" max="65535">
+                        </div>
+                        <div class="form-check form-switch">
+                            <input type="hidden" name="gnmi_use_ssl" value="0">
+                            <input class="form-check-input" type="checkbox" id="addGnmiUseSsl" name="gnmi_use_ssl" value="1" {% if defaults.gnmi_use_ssl %}checked{% endif %}>
+                            <label class="form-check-label" for="addGnmiUseSsl">Gunakan TLS untuk gNMI</label>
+                        </div>
+                        <div class="form-check form-switch mt-2">
+                            <input type="hidden" name="gnmi_verify_ssl" value="0">
+                            <input class="form-check-input" type="checkbox" id="addGnmiVerifySsl" name="gnmi_verify_ssl" value="1" {% if defaults.gnmi_verify_ssl %}checked{% endif %}>
+                            <label class="form-check-label" for="addGnmiVerifySsl">Verifikasi Sertifikat gNMI</label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" class="form-control" name="username" required 
+                               placeholder="admin">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-control" name="password" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" 
+                                  placeholder="Keterangan device..."></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="fas fa-plus"></i> Tambah Device
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Test Koneksi</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('juniper.config') }}">
+                    <input type="hidden" name="action" value="test">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">IP Address</label>
+                        <input type="text" class="form-control" name="ip_address" required 
+                               placeholder="192.168.1.1">
+                    </div>
+
+                    <div class="border rounded p-3 mb-3">
+                        <h6 class="mb-2"><i class="fas fa-link me-1"></i> REST API</h6>
+                        <div class="mb-2">
+                            <label class="form-label">API Port</label>
+                            <input type="number" class="form-control" name="api_port" value="{{ defaults.api_default_port }}">
+                        </div>
+                        <div class="form-check form-switch">
+                            <input type="hidden" name="api_use_ssl" value="0">
+                            <input class="form-check-input" type="checkbox" id="testApiUseSsl" name="api_use_ssl" value="1" {% if defaults.api_use_ssl %}checked{% endif %}>
+                            <label class="form-check-label" for="testApiUseSsl">Gunakan HTTPS</label>
+                        </div>
+                        <div class="form-check form-switch mt-2">
+                            <input type="hidden" name="api_verify_ssl" value="0">
+                            <input class="form-check-input" type="checkbox" id="testApiVerifySsl" name="api_verify_ssl" value="1" {% if defaults.api_verify_ssl %}checked{% endif %}>
+                            <label class="form-check-label" for="testApiVerifySsl">Verifikasi Sertifikat SSL</label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" class="form-control" name="username" required 
+                               placeholder="admin">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-control" name="password" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-plug"></i> Test Koneksi
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        {% if devices %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Device Terdaftar</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% for device in devices %}
+                    <a href="{{ url_for('juniper.device_status', device_id=device.id) }}" 
+                       class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ device.name }}</h6>
+                            <small>{{ device.ip_address }}:{{ device.api_port }}</small>
+                        </div>
+                        <p class="mb-1">{{ device.description or 'No description' }}</p>
+                        <small>User: {{ device.username }}</small>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

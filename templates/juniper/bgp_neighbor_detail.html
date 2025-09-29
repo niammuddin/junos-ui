@@ -1,0 +1,373 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>
+        <i class="fas fa-network-wired"></i> BGP Neighbor: {{ neighbor_address }}
+    </h2>
+    <div>
+        <a href="{{ url_for('juniper.device_status', device_id=device.id) }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Kembali ke Status
+        </a>
+    </div>
+</div>
+
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a href="{{ url_for('auth.dashboard') }}">Dashboard</a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{{ url_for('juniper.devices') }}">Devices</a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{{ url_for('juniper.device_status', device_id=device.id) }}">{{ device.name }}</a>
+        </li>
+        <li class="breadcrumb-item active">BGP Neighbor {{ neighbor_address }}</li>
+    </ol>
+</nav>
+
+{% if neighbor_data.error %}
+<div class="alert alert-danger">
+    <h5><i class="fas fa-exclamation-triangle"></i> Error</h5>
+    <p class="mb-0">{{ neighbor_data.error }}</p>
+</div>
+{% else %}
+<!-- Basic Information Card -->
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="card-title mb-0"><i class="fas fa-info-circle"></i> Basic Information</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <th width="40%">Peer Address:</th>
+                        <td><strong>{{ neighbor_data.basic_info.peer_address }}</strong></td>
+                    </tr>
+                    <tr>
+                        <th>Peer AS:</th>
+                        <td>
+                            <span class="badge bg-info">{{ neighbor_data.basic_info.peer_as }}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Local Address:</th>
+                        <td>{{ neighbor_data.basic_info.local_address }}</td>
+                    </tr>
+                    <tr>
+                        <th>Local AS:</th>
+                        <td>
+                            <span class="badge bg-secondary">{{ neighbor_data.basic_info.local_as }}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Peer Type:</th>
+                        <td>
+                            <span class="badge bg-{% if neighbor_data.basic_info.peer_type == 'External' %}warning{% else %}success{% endif %}">
+                                {{ neighbor_data.basic_info.peer_type }}
+                            </span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <th width="40%">Peer Group:</th>
+                        <td>{{ neighbor_data.basic_info.peer_group }}</td>
+                    </tr>
+                    <tr>
+                        <th>Description:</th>
+                        <td>{{ neighbor_data.basic_info.description or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Peer State:</th>
+                        <td>
+                            <span class="badge bg-{% if neighbor_data.basic_info.peer_state == 'Established' %}success{% else %}danger{% endif %}">
+                                {{ neighbor_data.basic_info.peer_state }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Local Interface:</th>
+                        <td>{{ neighbor_data.basic_info.local_interface_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Peer Flags:</th>
+                        <td><small>{{ neighbor_data.basic_info.peer_flags }}</small></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Session Information -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0"><i class="fas fa-exchange-alt"></i> Session Information</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <th width="50%">Last State:</th>
+                        <td>{{ neighbor_data.session_info.last_state }}</td>
+                    </tr>
+                    <tr>
+                        <th>Last Event:</th>
+                        <td>{{ neighbor_data.session_info.last_event }}</td>
+                    </tr>
+                    <tr>
+                        <th>Last Error:</th>
+                        <td>{{ neighbor_data.session_info.last_error or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Flap Count:</th>
+                        <td>
+                            <span class="badge bg-{% if neighbor_data.session_info.flap_count == '0' %}success{% else %}warning{% endif %}">
+                                {{ neighbor_data.session_info.flap_count }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Last Flap Event:</th>
+                        <td>{{ neighbor_data.session_info.last_flap_event or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Hold Time:</th>
+                        <td>{{ neighbor_data.session_info.active_holdtime }}s</td>
+                    </tr>
+                    <tr>
+                        <th>Keepalive:</th>
+                        <td>{{ neighbor_data.session_info.keepalive_interval }}s</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-success text-white">
+                <h5 class="card-title mb-0"><i class="fas fa-chart-bar"></i> Statistics</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <th width="50%">Input Messages:</th>
+                        <td>{{ neighbor_data.statistics.input_messages }}</td>
+                    </tr>
+                    <tr>
+                        <th>Input Updates:</th>
+                        <td>{{ neighbor_data.statistics.input_updates }}</td>
+                    </tr>
+                    <tr>
+                        <th>Input Octets:</th>
+                        <td>{{ "{:,}".format(neighbor_data.statistics.input_octets|int) }}</td>
+                    </tr>
+                    <tr>
+                        <th>Output Messages:</th>
+                        <td>{{ neighbor_data.statistics.output_messages }}</td>
+                    </tr>
+                    <tr>
+                        <th>Output Updates:</th>
+                        <td>{{ neighbor_data.statistics.output_updates }}</td>
+                    </tr>
+                    <tr>
+                        <th>Output Octets:</th>
+                        <td>{{ "{:,}".format(neighbor_data.statistics.output_octets|int) }}</td>
+                    </tr>
+                    <tr>
+                        <th>Last Received:</th>
+                        <td>{{ neighbor_data.statistics.last_received }}s ago</td>
+                    </tr>
+                    <tr>
+                        <th>Last Sent:</th>
+                        <td>{{ neighbor_data.statistics.last_sent }}s ago</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- BGP Options -->
+{% if neighbor_data.options %}
+<div class="card mb-4">
+    <div class="card-header bg-warning text-dark">
+        <h5 class="card-title mb-0"><i class="fas fa-cog"></i> BGP Options</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <th width="40%">Export Policy:</th>
+                        <td>{{ neighbor_data.options.export_policy }}</td>
+                    </tr>
+                    <tr>
+                        <th>Import Policy:</th>
+                        <td>{{ neighbor_data.options.import_policy }}</td>
+                    </tr>
+                    <tr>
+                        <th>Preference:</th>
+                        <td>{{ neighbor_data.options.preference }}</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <th width="40%">BGP Options:</th>
+                        <td><small>{{ neighbor_data.options.bgp_options }}</small></td>
+                    </tr>
+                    <tr>
+                        <th>Extended Options:</th>
+                        <td><small>{{ neighbor_data.options.bgp_options_extended }}</small></td>
+                    </tr>
+                    <tr>
+                        <th>Configured Hold Time:</th>
+                        <td>{{ neighbor_data.options.holdtime }}s</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- BFD Information -->
+{% if neighbor_data.bfd_info %}
+<div class="card mb-4">
+    <div class="card-header bg-secondary text-white">
+        <h5 class="card-title mb-0"><i class="fas fa-heartbeat"></i> BFD Information</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <th width="50%">Configuration State:</th>
+                        <td>
+                            <span class="badge bg-{% if neighbor_data.bfd_info.bfd_configuration_state == 'enabled' %}success{% else %}secondary{% endif %}">
+                                {{ neighbor_data.bfd_info.bfd_configuration_state }}
+                            </span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <th width="50%">Operational State:</th>
+                        <td>
+                            <span class="badge bg-{% if neighbor_data.bfd_info.bfd_operational_state == 'up' %}success{% else %}danger{% endif %}">
+                                {{ neighbor_data.bfd_info.bfd_operational_state }}
+                            </span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- RIB Information -->
+{% if neighbor_data.ribs %}
+<div class="card mb-4">
+    <div class="card-header bg-dark text-white">
+        <h5 class="card-title mb-0"><i class="fas fa-database"></i> RIB Information</h5>
+    </div>
+    <div class="card-body">
+        {% for rib in neighbor_data.ribs %}
+        <div class="rib-section mb-3 p-3 border rounded">
+            <h6 class="text-primary">{{ rib.name }}</h6>
+            <div class="row text-center">
+                <div class="col-3">
+                    <div class="border rounded p-2 bg-light">
+                        <h5 class="text-success mb-0">{{ rib.active_prefix_count }}</h5>
+                        <small class="text-muted">Active</small>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="border rounded p-2 bg-light">
+                        <h5 class="text-info mb-0">{{ rib.received_prefix_count }}</h5>
+                        <small class="text-muted">Received</small>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="border rounded p-2 bg-light">
+                        <h5 class="text-warning mb-0">{{ rib.accepted_prefix_count }}</h5>
+                        <small class="text-muted">Accepted</small>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="border rounded p-2 bg-light">
+                        <h5 class="text-secondary mb-0">{{ rib.advertised_prefix_count }}</h5>
+                        <small class="text-muted">Advertised</small>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-2">
+                <small class="text-muted">
+                    RIB State: {{ rib.bgp_rib_state }} | 
+                    Send State: {{ rib.send_state }} |
+                    Suppressed: {{ rib.suppressed_prefix_count }}
+                </small>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Error Information -->
+{% if neighbor_data.errors %}
+<div class="card">
+    <div class="card-header bg-danger text-white">
+        <h5 class="card-title mb-0"><i class="fas fa-exclamation-triangle"></i> Error Information</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Error Type</th>
+                        <th>Send Count</th>
+                        <th>Receive Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for error in neighbor_data.errors %}
+                    <tr>
+                        <td>{{ error.name }}</td>
+                        <td>
+                            <span class="badge bg-{% if error.send_count == '0' %}success{% else %}warning{% endif %}">
+                                {{ error.send_count }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-{% if error.receive_count == '0' %}success{% else %}danger{% endif %}">
+                                {{ error.receive_count }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+
+{% endblock %}

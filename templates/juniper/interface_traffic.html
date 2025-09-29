@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4" id="trafficMonitorHeader">
+    <h2>
+        <i class="fas fa-tachometer-alt"></i> Live Traffic Monitor: {{ device.name }}
+    </h2>
+    <div>
+        <a href="{{ url_for('juniper.device_status', device_id=device.id) }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Kembali ke Status
+        </a>
+    </div>
+</div>
+
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('auth.dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('juniper.devices') }}">Devices</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('juniper.device_status', device_id=device.id) }}">{{ device.name }}</a></li>
+        <li class="breadcrumb-item active">Traffic Monitor</li>
+    </ol>
+</nav>
+
+<!-- Control Panel -->
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="card-title mb-0"><i class="fas fa-sliders-h"></i> Monitoring Controls</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <label class="form-label">Pilih Interface</label>
+                <select id="interfaceSelect" class="form-select">
+                    <option value="all">All Interfaces</option>
+                    <!-- Akan diisi oleh JavaScript -->
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Update Interval</label>
+                <select id="intervalSelect" class="form-select">
+                    <option value="2">2 detik</option>
+                    <option value="5">5 detik</option>
+                    <option value="10" selected>10 detik</option>
+                    <option value="30">30 detik</option>
+                    <option value="60">1 menit</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Tampilkan</label>
+                <select id="viewSelect" class="form-select">
+                    <option value="table">Tabel</option>
+                    <option value="charts">Grafik</option>
+                    <option value="both">Keduanya</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end gap-2">
+                <button id="startBtn" class="btn btn-success w-100">
+                    <i class="fas fa-play"></i> Start
+                </button>
+                <button id="stopBtn" class="btn btn-danger w-100 d-none">
+                    <i class="fas fa-stop"></i> Stop
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Real-time Statistics -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-info">
+            <div class="card-body text-center">
+                <h4 id="totalInRate">0 bps</h4>
+                <p class="mb-0">Total Ingress</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body text-center">
+                <h4 id="totalOutRate">0 bps</h4>
+                <p class="mb-0">Total Egress</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body text-center">
+                <h4 id="totalPps">0 pps</h4>
+                <p class="mb-0">Packets/sec</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-secondary">
+            <div class="card-body text-center">
+                <h4 id="activeInterfaces">0</h4>
+                <p class="mb-0">Active Interfaces</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Traffic Table -->
+<div class="card mb-4" id="tableView">
+    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0"><i class="fas fa-table"></i> Real-time Traffic</h5>
+        <span class="badge bg-light text-dark" id="lastUpdate">Last update: --</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Interface</th>
+                        <th>Status</th>
+                        <th>In Rate</th>
+                        <th>Out Rate</th>
+                        <th>In Packets</th>
+                        <th>Out Packets</th>
+                        <th>Utilization</th>
+                        <th>Trend</th>
+                    </tr>
+                </thead>
+                <tbody id="trafficTableBody">
+                    <!-- Akan diisi oleh JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Traffic Charts -->
+<div class="card mb-4 d-none" id="chartsView">
+    <div class="card-header bg-dark text-white">
+        <h5 class="card-title mb-0"><i class="fas fa-chart-line"></i> Traffic Charts</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <canvas id="trafficChart" width="400" height="200"></canvas>
+            </div>
+            <div class="col-md-6">
+                <canvas id="packetsChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Connection Status -->
+<div class="alert alert-info">
+    <i class="fas fa-info-circle"></i> 
+    <strong>Status:</strong> 
+    <span id="connectionStatus">Ready to start monitoring</span>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<!-- Chart.js untuk grafik -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    window.interfaceTrafficConfig = {
+        deviceId: {{ device.id }},
+        endpoints: {
+            interfaces: "{{ url_for('juniper.api_traffic_interfaces', device_id=device.id) }}",
+            start: "{{ url_for('juniper.api_traffic_start', device_id=device.id) }}",
+            stop: "{{ url_for('juniper.api_traffic_stop', device_id=device.id) }}",
+            update: "{{ url_for('juniper.api_traffic_update', device_id=device.id) }}"
+        }
+    };
+</script>
+<script src="{{ url_for('static', filename='js/interface_traffic.js') }}"></script>
+<style>
+.progress {
+    background-color: #e9ecef;
+    border-radius: 0.25rem;
+}
+
+.table th {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+</style>
+{% endblock %}

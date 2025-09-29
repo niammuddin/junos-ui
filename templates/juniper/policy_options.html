@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>
+        <i class="fas fa-cogs"></i> Policy Options: {{ device.name }}
+    </h2>
+    <div>
+        <a href="{{ url_for('juniper.device_status', device_id=device.id) }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Kembali ke Status
+        </a>
+    </div>
+</div>
+
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a href="{{ url_for('auth.dashboard') }}">Dashboard</a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{{ url_for('juniper.devices') }}">Devices</a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{{ url_for('juniper.device_status', device_id=device.id) }}">{{ device.name }}</a>
+        </li>
+        <li class="breadcrumb-item active">Policy Options</li>
+    </ol>
+</nav>
+
+<!-- Last Updated -->
+<div class="alert alert-info d-flex justify-content-between align-items-center">
+    <div>
+        <i class="fas fa-clock"></i> 
+        <strong>Last Updated:</strong> {{ policy_data.last_updated }}
+    </div>
+    <button class="btn btn-sm btn-outline-info" onclick="refreshPolicyOptions()">
+        <i class="fas fa-sync-alt"></i> Refresh
+    </button>
+</div>
+
+<!-- Tabs Navigation -->
+<ul class="nav nav-tabs mb-4" id="policyTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="prefix-tab" data-bs-toggle="tab" data-bs-target="#prefix" type="button" role="tab">
+            <i class="fas fa-list"></i> Prefix Lists ({{ policy_data.prefix_lists|length }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="policy-tab" data-bs-toggle="tab" data-bs-target="#policy" type="button" role="tab">
+            <i class="fas fa-project-diagram"></i> Policy Statements ({{ policy_data.policy_statements|length }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="community-tab" data-bs-toggle="tab" data-bs-target="#community" type="button" role="tab">
+            <i class="fas fa-users"></i> Communities ({{ policy_data.communities|length }})
+        </button>
+    </li>
+</ul>
+
+<!-- Tab Content -->
+<div class="tab-content" id="policyTabsContent">
+    <!-- Prefix Lists Tab -->
+    <div class="tab-pane fade show active" id="prefix" role="tabpanel">
+        <div class="row">
+            {% for prefix_list in policy_data.prefix_lists %}
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-list-alt"></i> {{ prefix_list.name }}
+                        </h6>
+                        <span class="badge bg-light text-dark">{{ prefix_list.prefixes|length }} prefixes</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-borderless">
+                                <tbody>
+                                    {% for prefix in prefix_list.prefixes %}
+                                    <tr>
+                                        <td width="10%">
+                                            <span class="badge bg-{% if ':' in prefix %}info{% else %}success{% endif %}">
+                                                {% if ':' in prefix %}IPv6{% else %}IPv4{% endif %}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <code>{{ prefix }}</code>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Policy Statements Tab -->
+    <div class="tab-pane fade" id="policy" role="tabpanel">
+        <div class="accordion" id="policyAccordion">
+            {% for policy in policy_data.policy_statements %}
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="heading{{ loop.index }}">
+                    <button class="accordion-button {% if not loop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}">
+                        <i class="fas fa-project-diagram me-2"></i>
+                        <strong>{{ policy.name }}</strong>
+                        <span class="badge bg-secondary ms-2">{{ policy.terms|length }} terms</span>
+                    </button>
+                </h2>
+                <div id="collapse{{ loop.index }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}" data-bs-parent="#policyAccordion">
+                    <div class="accordion-body">
+                        {% for term in policy.terms %}
+                        <div class="card mb-3">
+                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                <h6 class="card-title mb-0">Term: {{ term.name }}</h6>
+                                <small class="text-muted">Priority: {{ loop.index }}</small>
+                            </div>
+                            <div class="card-body">
+                                <!-- From Conditions -->
+                                {% if term.from %}
+                                <div class="mb-3">
+                                    <strong>From Conditions:</strong>
+                                    {% if term.from.prefix_list %}
+                                    <div class="ms-3">
+                                        <i class="fas fa-filter text-primary"></i> Prefix Lists:
+                                        {% for pl in term.from.prefix_list %}
+                                        <span class="badge bg-primary ms-1">{{ pl }}</span>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                    {% if term.from.route_filter %}
+                                    <div class="ms-3">
+                                        <i class="fas fa-route text-info"></i> Route Filters:
+                                        {% for rf in term.from.route_filter %}
+                                        <span class="badge bg-info ms-1">{{ rf.address }}{% if rf.exact %} (exact){% endif %}</span>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                    {% if not term.from.prefix_list and not term.from.route_filter %}
+                                    <div class="text-muted ms-3">No conditions (match all)</div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+
+                                <!-- Then Actions -->
+                                <div>
+                                    <strong>Then Actions:</strong>
+                                    <div class="ms-3">
+                                        {% if term.then.accept %}
+                                        <span class="badge bg-success"><i class="fas fa-check"></i> ACCEPT</span>
+                                        {% elif term.then.reject %}
+                                        <span class="badge bg-danger"><i class="fas fa-times"></i> REJECT</span>
+                                        {% endif %}
+                                        
+                                        {% if term.then.local_preference %}
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="fas fa-star"></i> Local Preference: {{ term.then.local_preference }}
+                                        </span>
+                                        {% endif %}
+                                        
+                                        {% if term.then.as_path_prepend %}
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-retweet"></i> AS Path Prepend: {{ term.then.as_path_prepend }}
+                                        </span>
+                                        {% endif %}
+                                        
+                                        {% if term.then.community_add %}
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-tag"></i> Add Community: {{ term.then.community_add }}
+                                        </span>
+                                        {% endif %}
+
+                                        <!-- Default then action untuk policy -->
+                                        {% if term.default_then and term.default_then.accept and not term.then.accept and not term.then.reject %}
+                                        <span class="badge bg-success"><i class="fas fa-check"></i> ACCEPT (default)</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Communities Tab -->
+    <div class="tab-pane fade" id="community" role="tabpanel">
+        <div class="row">
+            {% for community in policy_data.communities %}
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-users"></i> {{ community.name }}
+                        </h6>
+                        <span class="badge bg-light text-dark">{{ community.members|length }} members</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for member in community.members %}
+                            <span class="badge bg-primary">{{ member }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function refreshPolicyOptions() {
+    if (!confirm('Refresh policy options configuration?')) return;
+    
+    const btn = event.target.closest('button');
+    const originalHtml = btn.innerHTML;
+    
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+    btn.disabled = true;
+    
+    setTimeout(() => {
+        window.location.reload();
+    }, 1000);
+    
+    setTimeout(() => {
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+    }, 3000);
+}
+
+// Auto-switch tabs based on URL hash
+document.addEventListener('DOMContentLoaded', function() {
+    const hash = window.location.hash;
+    if (hash) {
+        const tab = new bootstrap.Tab(document.querySelector(hash + '-tab'));
+        tab.show();
+    }
+    
+    // Update URL when tab changes
+    document.getElementById('policyTabs').addEventListener('shown.bs.tab', function (e) {
+        window.location.hash = e.target.getAttribute('data-bs-target').replace('#', '');
+    });
+});
+</script>
+
+<style>
+.accordion-button {
+    font-weight: 600;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+}
+
+.nav-tabs .nav-link {
+    font-weight: 500;
+}
+
+.nav-tabs .nav-link.active {
+    font-weight: 600;
+}
+</style>
+{% endblock %}

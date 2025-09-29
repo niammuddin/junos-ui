@@ -1,0 +1,14 @@
+# Virtual environment
+.venv/
+
+# Instance folder (misalnya untuk Flask)
+instance/
+
+# Python cache
+__pycache__/
+
+# Optional: file sementara/OS
+*.pyc
+*.pyo
+*.pyd
+*.DS_Store
