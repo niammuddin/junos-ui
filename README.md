@@ -134,9 +134,10 @@ Group=junos
 # Path ke direktori proyek
 WorkingDirectory=/home/junos-ui
 Environment="PATH=/home/junos-ui/.venv/bin"
-EnvironmentFile=/home/junos-ui/.env
+EnvironmentFile=-/home/junos-ui/.env
+Environment="GUNICORN_BIND=0.0.0.0:8000"
 
-ExecStart=/home/junos-ui/.venv/bin/gunicorn --workers 2 --bind 0.0.0.0:8000 "app:create_app()"
+ExecStart=/home/junos-ui/.venv/bin/gunicorn -c /home/junos-ui/gunicorn.conf.py "app:create_app()"
 
 Restart=always
 
@@ -161,6 +162,21 @@ sudo systemctl status junos-ui
 
 Aplikasi akan berjalan di `http://127.0.0.1:8000`
 
+#### Opsi Tuning Gunicorn
+
+Gunicorn kini menggunakan file konfigurasi `gunicorn.conf.py`. Anda bisa mengatur perilaku worker melalui environment variable tanpa mengubah file service:
+
+- `GUNICORN_TIMEOUT`: batas waktu request (default `90` detik)
+- `GUNICORN_GRACEFUL_TIMEOUT`: waktu tunggu shutdown worker (default `30`)
+- `GUNICORN_WORKERS`: override jumlah worker (default `CPU * 2 + 1`)
+- `GUNICORN_BIND`: alamat bind (default `0.0.0.0:PORT`)
+
+Contoh menambah timeout di file service:
+
+```
+Environment="GUNICORN_TIMEOUT=120"
+```
+
 <br/><br/>
 
 # 🚀 Konfig Perangkat Juniper
@@ -173,7 +189,24 @@ set system services rest http port 3443
 ```
 Sesuaikan rest API menggunakan http/https dan PORT
 
+---
 
+### Add User
 
+```bash
+usage: create_user.py [-h] [--email EMAIL] username
 
+Buat user baru untuk sistem login
+
+positional arguments:
+  username              Username untuk user baru
+
+options:
+  -h, --help            show this help message and exit
+  --email EMAIL         Email untuk user baru
+```
+
+```bash
+python3 src/cli/create_user.py username
+```
 

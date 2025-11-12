@@ -1,5 +1,7 @@
 # Virtual environment
 .venv/
+venv/
+.env
 
 # Instance folder (misalnya untuk Flask)
 instance/

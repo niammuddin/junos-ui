@@ -1,8 +1,15 @@
-import requests
 import json
+from concurrent.futures import ThreadPoolExecutor
+
+import requests
+import urllib3
 from requests.auth import HTTPBasicAuth
+from urllib3.exceptions import InsecureRequestWarning
 
 from config import Config
+
+if Config.SUPPRESS_TLS_WARNINGS:
+    urllib3.disable_warnings(InsecureRequestWarning)
 
 class JuniperAPI:
     def __init__(self, ip_address, port, username, password, use_ssl=False, verify_ssl=False):
@@ -971,58 +978,48 @@ class JuniperAPI:
 
     def _fallback_system_information(self):
         """Fallback ketika multi-RPC gagal: panggil API terpisah"""
-        system_data = None
-        route_engine_data = None
         sys_error = None
         re_error = None
 
-        try:
-            resp = requests.get(
-                f"{self.base_url}/rpc/get-system-information",
-                auth=self.auth,
-                headers=self.headers,
-                timeout=10,
-                verify=self.verify
-            )
-            if resp.status_code == 200:
-                try:
-                    system_data = self._parse_system_info(resp.json())
-                except json.JSONDecodeError as e:
-                    sys_error = f"JSON decode error: {str(e)}"
-                    print(f"[JuniperAPI] Fallback system-info JSON decode error: {e}")
-            else:
-                sys_error = f"API Error: {resp.status_code}"
-                print(f"[JuniperAPI] Fallback system-info HTTP status {resp.status_code}")
-        except requests.exceptions.RequestException as e:
-            sys_error = f"Connection error: {str(e)}"
-            print(f"[JuniperAPI] Fallback system-info connection error: {e}")
-        except Exception as e:
-            sys_error = f"Unexpected error: {str(e)}"
-            print(f"[JuniperAPI] Fallback system-info unexpected error: {e}")
+        def _fetch(endpoint: str, parser, label: str):
+            try:
+                resp = requests.get(
+                    f"{self.base_url}{endpoint}",
+                    auth=self.auth,
+                    headers=self.headers,
+                    timeout=10,
+                    verify=self.verify
+                )
+                if resp.status_code == 200:
+                    try:
+                        return parser(resp.json()), None
+                    except json.JSONDecodeError as e:
+                        print(f"[JuniperAPI] Fallback {label} JSON decode error: {e}")
+                        return None, f"JSON decode error: {str(e)}"
+                print(f"[JuniperAPI] Fallback {label} HTTP status {resp.status_code}")
+                return None, f"API Error: {resp.status_code}"
+            except requests.exceptions.RequestException as e:
+                print(f"[JuniperAPI] Fallback {label} connection error: {e}")
+                return None, f"Connection error: {str(e)}"
+            except Exception as e:
+                print(f"[JuniperAPI] Fallback {label} unexpected error: {e}")
+                return None, f"Unexpected error: {str(e)}"
 
-        try:
-            resp = requests.get(
-                f"{self.base_url}/rpc/get-route-engine-information",
-                auth=self.auth,
-                headers=self.headers,
-                timeout=10,
-                verify=self.verify
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            system_future = executor.submit(
+                _fetch,
+                "/rpc/get-system-information",
+                self._parse_system_info,
+                "system-info"
             )
-            if resp.status_code == 200:
-                try:
-                    route_engine_data = self._parse_route_engine_info(resp.json())
-                except json.JSONDecodeError as e:
-                    re_error = f"JSON decode error: {str(e)}"
-                    print(f"[JuniperAPI] Fallback route-engine JSON decode error: {e}")
-            else:
-                re_error = f"API Error: {resp.status_code}"
-                print(f"[JuniperAPI] Fallback route-engine HTTP status {resp.status_code}")
-        except requests.exceptions.RequestException as e:
-            re_error = f"Connection error: {str(e)}"
-            print(f"[JuniperAPI] Fallback route-engine connection error: {e}")
-        except Exception as e:
-            re_error = f"Unexpected error: {str(e)}"
-            print(f"[JuniperAPI] Fallback route-engine unexpected error: {e}")
+            route_engine_future = executor.submit(
+                _fetch,
+                "/rpc/get-route-engine-information",
+                self._parse_route_engine_info,
+                "route-engine"
+            )
+            system_data, sys_error = system_future.result()
+            route_engine_data, re_error = route_engine_future.result()
 
         result = {
             'system': system_data if system_data else ({'error': sys_error} if sys_error else None),

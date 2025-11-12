@@ -11,32 +11,284 @@
         .flex-shrink-0 {
             flex-shrink: 0;
         }
+
+        .navbar-main {
+            background: linear-gradient(140deg, #0b1f3a 0%, #0c3c78 55%, #0d6efd 100%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(6px);
+        }
+
+        .navbar-main .navbar-toggler {
+            padding: 0.35rem 0.6rem;
+            border-radius: 0.6rem;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .navbar-brand-icon {
+            width: 2.4rem;
+            height: 2.4rem;
+            border-radius: 0.75rem;
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            font-size: 1.2rem;
+        }
+
+        .brand-copy {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.1;
+        }
+
+        .brand-copy span {
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            font-size: 0.92rem;
+        }
+
+        .brand-tagline {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.7rem;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            display: none;
+        }
+
+        .navbar-nav .nav-link {
+            color: rgba(255, 255, 255, 0.78);
+            padding: 0.45rem 0.9rem;
+            border-radius: 0.85rem;
+            transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+        }
+
+        .navbar-nav .nav-link i {
+            font-size: 0.85rem;
+        }
+
+        .navbar-nav .nav-link:hover,
+        .navbar-nav .nav-link:focus {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.18);
+            transform: translateY(-1px);
+        }
+
+        .navbar-nav .nav-link.active {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.28);
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25);
+        }
+
+        .navbar-user-actions {
+            font-size: 0.85rem;
+        }
+
+        .navbar-collapse-inner {
+            width: 100%;
+        }
+
+        .navbar-avatar {
+            width: 2.3rem;
+            height: 2.3rem;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #4facfe 0%, #38f9d7 100%);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            color: #05223d;
+            box-shadow: 0 0.35rem 0.85rem rgba(8, 27, 52, 0.25);
+        }
+
+        .navbar-username {
+            color: #fff;
+            font-weight: 600;
+            letter-spacing: 0.015em;
+        }
+
+        .navbar-profile-toggle {
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+            padding: 0.4rem 0.75rem;
+            box-shadow: 0 0.5rem 1.4rem rgba(9, 17, 40, 0.25);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+        }
+
+        .navbar-profile-toggle:hover,
+        .navbar-profile-toggle:focus {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 0.65rem 1.6rem rgba(9, 17, 40, 0.28);
+        }
+
+        .navbar-profile-toggle .fa-chevron-down {
+            font-size: 0.7rem;
+            transition: transform 0.2s ease;
+        }
+
+        .navbar-profile-toggle[aria-expanded="true"] .fa-chevron-down {
+            transform: rotate(180deg);
+        }
+
+        .navbar-profile-menu {
+            min-width: 14rem;
+            border-radius: 0.85rem;
+            border: 1px solid rgba(12, 60, 120, 0.12);
+            padding: 0.35rem 0;
+        }
+
+        .navbar-profile-menu .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            font-weight: 500;
+        }
+
+        .navbar-profile-menu .dropdown-item i {
+            font-size: 1rem;
+        }
+
+        .navbar-action-btn {
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            color: #fff;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
+            border-radius: 0.85rem;
+            box-shadow: 0 0.4rem 1.1rem rgba(9, 17, 40, 0.2);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+
+        .navbar-action-btn:hover,
+        .navbar-action-btn:focus {
+            color: #fff;
+            transform: translateY(-1px);
+            box-shadow: 0 0.6rem 1.4rem rgba(9, 17, 40, 0.25);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.1));
+        }
+
+        .navbar-divider {
+            width: 100%;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.18);
+        }
+
+        .navbar-main .navbar-collapse {
+            transition: all 0.25s ease;
+        }
+
+        @media (max-width: 991.98px) {
+            .navbar-main .navbar-collapse {
+                background: rgba(6, 18, 36, 0.9);
+                margin-top: 0.75rem;
+                padding: 1rem 1.1rem;
+                border-radius: 1rem;
+                box-shadow: 0 0.75rem 2.2rem rgba(9, 17, 40, 0.35);
+            }
+
+            .navbar-action-btn {
+                width: 100%;
+            }
+
+            .navbar-profile-menu {
+                width: 100%;
+                margin-top: 0.5rem;
+            }
+        }
+
+        @media (min-width: 992px) {
+            .navbar-user-actions {
+                width: auto;
+            }
+
+            .navbar-action-btn {
+                width: auto;
+            }
+
+            .brand-tagline {
+                display: inline-block;
+            }
+
+            .navbar-profile-toggle {
+                padding-right: 1rem;
+            }
+        }
     </style>
 </head>
 <body class="d-flex flex-column h-100">
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-main shadow-sm">
         <div class="container">
-            <a class="navbar-brand" href="{{ url_for('auth.dashboard') }}">
-                <i class="fas fa-network-wired"></i> Juniper Manager
+            <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url_for('auth.dashboard') }}">
+                <span class="navbar-brand-icon d-inline-flex align-items-center justify-content-center">
+                    <i class="fas fa-network-wired"></i>
+                </span>
+                <div class="brand-copy">
+                    <span class="fw-semibold">Junos UI</span>
+                    <small class="brand-tagline">Network Automation</small>
+                </div>
             </a>
-            
-            {% if current_user.is_authenticated %}
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="{{ url_for('auth.dashboard') }}">
-                    <i class="fas fa-tachometer-alt"></i> Dashboard
-                </a>
-                <a class="nav-link" href="{{ url_for('juniper.devices') }}">
-                    <i class="fas fa-router"></i> Devices
-                </a>
-                <a class="nav-link" href="{{ url_for('auth.profile') }}">
-                    <i class="fas fa-user"></i> Profile
-                </a>
-                <a class="nav-link" href="{{ url_for('auth.logout') }}">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </a>
+
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain" aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            {% set endpoint = request.endpoint or '' %}
+            <div class="collapse navbar-collapse" id="navbarMain">
+                {% if current_user.is_authenticated %}
+                {% set username = current_user.username|default('User', true) %}
+                {% set user_initial = username[:1]|upper %}
+                <div class="navbar-collapse-inner w-100 d-lg-flex align-items-lg-center gap-lg-4">
+                    <ul class="navbar-nav flex-column flex-lg-row w-100 flex-grow-1 align-items-lg-center gap-1 gap-lg-2 mb-3 mb-lg-0">
+                        <li class="nav-item">
+                            <a class="nav-link {{ 'active' if endpoint == 'auth.dashboard' else '' }}" href="{{ url_for('auth.dashboard') }}">
+                                <i class="fas fa-tachometer-alt me-1"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ 'active' if endpoint.startswith('juniper.') else '' }}" href="{{ url_for('juniper.devices') }}">
+                                <i class="fas fa-router me-1"></i> Devices
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="navbar-divider d-lg-none my-3"></div>
+                    <div class="navbar-user-actions d-flex flex-column flex-lg-row align-items-lg-center gap-2 ms-lg-auto text-nowrap">
+                        <div class="dropdown w-100 w-lg-auto">
+                            <button class="btn navbar-profile-toggle d-flex align-items-center justify-content-between justify-content-lg-start gap-2 w-100" type="button" id="navbarProfileDropdown" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
+                                <span class="navbar-avatar flex-shrink-0">{{ user_initial }}</span>
+                                <span class="navbar-username text-start flex-grow-1">{{ username }}</span>
+                                <i class="fas fa-chevron-down ms-auto opacity-75"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm navbar-profile-menu" aria-labelledby="navbarProfileDropdown">
+                                <li><span class="dropdown-header text-uppercase small text-muted">Akun</span></li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('auth.profile') }}">
+                                        <i class="fas fa-user-circle text-primary me-2"></i> Profile
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">
+                                        <i class="fas fa-sign-out-alt me-2"></i> Logout
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="navbar-collapse-inner w-100 d-flex flex-column flex-lg-row align-items-lg-center gap-3 justify-content-lg-end">
+                    <a class="btn btn-sm navbar-action-btn px-3 ms-lg-auto" href="{{ url_for('auth.login') }}">
+                        <i class="fas fa-sign-in-alt me-1"></i> Login
+                    </a>
+                </div>
+                {% endif %}
             </div>
-            {% endif %}
         </div>
     </nav>
 

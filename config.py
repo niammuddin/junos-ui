@@ -6,6 +6,7 @@ load_dotenv()
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-key-change-in-production')
     ENCRYPTION_KEY = os.environ.get('ENCRYPTION_KEY', 'dev-encryption-key-change-me')
+    PORT = int(os.environ.get('PORT', 5000))
     
     # Security configurations
     SESSION_COOKIE_HTTPONLY = True
@@ -17,8 +18,9 @@ class Config:
     DATABASE_PATH = os.path.join(os.path.dirname(__file__), 'instance', 'users.db')
     
     # Rate limiting
-    RATELIMIT_STORAGE_URL = "memory://"
-    RATELIMIT_STRATEGY = "fixed-window"
+    RATELIMIT_STORAGE_URL = os.environ.get('RATELIMIT_STORAGE_URL', 'memory://')
+    RATELIMIT_STRATEGY = os.environ.get('RATELIMIT_STRATEGY', 'fixed-window')
+    SUPPRESS_TLS_WARNINGS = os.environ.get('SUPPRESS_TLS_WARNINGS', 'true').lower() in {'1', 'true', 'yes', 'on'}
 
     # REST API defaults
     API_DEFAULT_PORT = int(os.environ.get('API_DEFAULT_PORT', 3000))

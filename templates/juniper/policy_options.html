@@ -100,93 +100,129 @@
 
     <!-- Policy Statements Tab -->
     <div class="tab-pane fade" id="policy" role="tabpanel">
-        <div class="accordion" id="policyAccordion">
+        {% if policy_data.policy_statements %}
+        <div class="alert alert-light border d-flex justify-content-between align-items-center audit-hint">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fas fa-clipboard-check text-primary"></i>
+                <span>Semua policy statement ditampilkan penuh untuk memudahkan audit.</span>
+            </div>
+            <span class="badge bg-light text-primary border border-primary">Total: {{ policy_data.policy_statements|length }} policy</span>
+        </div>
+
+        <div class="row g-2 align-items-end mb-4 policy-search-controls">
+            <div class="col-md-6">
+                <label for="policySearchInput" class="form-label mb-1">Filter Pencarian</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="search" class="form-control" id="policySearchInput" placeholder="Cari policy, term, prefix list, atau aksi..." autocomplete="off">
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <small class="text-muted">Penelusuran bersifat instan dan tidak peka huruf besar/kecil.</small>
+            </div>
+        </div>
+
+        <div class="policy-statement-grid">
+            <div id="policySearchEmpty" class="alert alert-warning d-none mb-3">
+                <i class="fas fa-info-circle"></i> Tidak ada policy atau term yang cocok dengan kata kunci pencarian.
+            </div>
             {% for policy in policy_data.policy_statements %}
-            <div class="accordion-item">
-                <h2 class="accordion-header" id="heading{{ loop.index }}">
-                    <button class="accordion-button {% if not loop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}">
-                        <i class="fas fa-project-diagram me-2"></i>
-                        <strong>{{ policy.name }}</strong>
-                        <span class="badge bg-secondary ms-2">{{ policy.terms|length }} terms</span>
-                    </button>
-                </h2>
-                <div id="collapse{{ loop.index }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}" data-bs-parent="#policyAccordion">
-                    <div class="accordion-body">
-                        {% for term in policy.terms %}
-                        <div class="card mb-3">
-                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                                <h6 class="card-title mb-0">Term: {{ term.name }}</h6>
-                                <small class="text-muted">Priority: {{ loop.index }}</small>
-                            </div>
-                            <div class="card-body">
-                                <!-- From Conditions -->
-                                {% if term.from %}
-                                <div class="mb-3">
-                                    <strong>From Conditions:</strong>
-                                    {% if term.from.prefix_list %}
-                                    <div class="ms-3">
-                                        <i class="fas fa-filter text-primary"></i> Prefix Lists:
-                                        {% for pl in term.from.prefix_list %}
-                                        <span class="badge bg-primary ms-1">{{ pl }}</span>
-                                        {% endfor %}
-                                    </div>
-                                    {% endif %}
-                                    {% if term.from.route_filter %}
-                                    <div class="ms-3">
-                                        <i class="fas fa-route text-info"></i> Route Filters:
-                                        {% for rf in term.from.route_filter %}
-                                        <span class="badge bg-info ms-1">{{ rf.address }}{% if rf.exact %} (exact){% endif %}</span>
-                                        {% endfor %}
-                                    </div>
-                                    {% endif %}
-                                    {% if not term.from.prefix_list and not term.from.route_filter %}
-                                    <div class="text-muted ms-3">No conditions (match all)</div>
-                                    {% endif %}
-                                </div>
-                                {% endif %}
-
-                                <!-- Then Actions -->
-                                <div>
-                                    <strong>Then Actions:</strong>
-                                    <div class="ms-3">
-                                        {% if term.then.accept %}
-                                        <span class="badge bg-success"><i class="fas fa-check"></i> ACCEPT</span>
-                                        {% elif term.then.reject %}
-                                        <span class="badge bg-danger"><i class="fas fa-times"></i> REJECT</span>
-                                        {% endif %}
-                                        
-                                        {% if term.then.local_preference %}
-                                        <span class="badge bg-warning text-dark">
-                                            <i class="fas fa-star"></i> Local Preference: {{ term.then.local_preference }}
-                                        </span>
-                                        {% endif %}
-                                        
-                                        {% if term.then.as_path_prepend %}
-                                        <span class="badge bg-info">
-                                            <i class="fas fa-retweet"></i> AS Path Prepend: {{ term.then.as_path_prepend }}
-                                        </span>
-                                        {% endif %}
-                                        
-                                        {% if term.then.community_add %}
-                                        <span class="badge bg-secondary">
-                                            <i class="fas fa-tag"></i> Add Community: {{ term.then.community_add }}
-                                        </span>
-                                        {% endif %}
-
-                                        <!-- Default then action untuk policy -->
-                                        {% if term.default_then and term.default_then.accept and not term.then.accept and not term.then.reject %}
-                                        <span class="badge bg-success"><i class="fas fa-check"></i> ACCEPT (default)</span>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
+            <div class="card policy-card mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fas fa-project-diagram text-white"></i>
+                        <span class="fw-semibold policy-name">{{ policy.name }}</span>
+                    </div>
+                    <span class="badge bg-light text-dark">{{ policy.terms|length }} terms</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped table-hover align-middle mb-0 policy-term-table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col" style="width: 20%;">Term</th>
+                                    <th scope="col" style="width: 45%;">Match Conditions</th>
+                                    <th scope="col">Then Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for term in policy.terms %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex flex-column">
+                                            <span class="fw-semibold term-name">{{ term.name }}</span>
+                                            <span class="text-muted small">Term {{ loop.index }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <ul class="list-unstyled mb-0 small">
+                                            {% if term.from and term.from.prefix_list %}
+                                            <li>
+                                                <span class="text-muted">Prefix Lists:</span>
+                                                {% for pl in term.from.prefix_list %}
+                                                <span class="badge bg-primary">{{ pl }}</span>
+                                                {% endfor %}
+                                            </li>
+                                            {% endif %}
+                                            {% if term.from and term.from.route_filter %}
+                                            <li class="mt-1">
+                                                <span class="text-muted">Route Filters:</span>
+                                                {% for rf in term.from.route_filter %}
+                                                <span class="badge bg-info text-dark">{{ rf.address }}{% if rf.exact %} (exact){% endif %}</span>
+                                                {% endfor %}
+                                            </li>
+                                            {% endif %}
+                                            {% if not term.from or (not term.from.prefix_list and not term.from.route_filter) %}
+                                            <li class="text-muted fst-italic">Match all prefixes</li>
+                                            {% endif %}
+                                        </ul>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            {% if term.then.accept %}
+                                            <span class="badge bg-success"><i class="fas fa-check"></i> Accept</span>
+                                            {% elif term.then.reject %}
+                                            <span class="badge bg-danger"><i class="fas fa-times"></i> Reject</span>
+                                            {% endif %}
+                                            {% if term.then.local_preference %}
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="fas fa-star"></i> Local Pref: {{ term.then.local_preference }}
+                                            </span>
+                                            {% endif %}
+                                            {% if term.then.as_path_prepend %}
+                                            <span class="badge bg-info">
+                                                <i class="fas fa-retweet"></i> AS Path: {{ term.then.as_path_prepend }}
+                                            </span>
+                                            {% endif %}
+                                            {% if term.then.community_add %}
+                                            <span class="badge bg-secondary">
+                                                <i class="fas fa-tag"></i> Add Community: {{ term.then.community_add }}
+                                            </span>
+                                            {% endif %}
+                                            {% if not term.then and term.default_then and term.default_then.accept %}
+                                            <span class="badge bg-success"><i class="fas fa-check"></i> Accept (default)</span>
+                                            {% elif not term.then and term.default_then and term.default_then.reject %}
+                                            <span class="badge bg-danger"><i class="fas fa-times"></i> Reject (default)</span>
+                                            {% endif %}
+                                            {% if not term.then and not term.default_then %}
+                                            <span class="badge bg-light text-muted border">No explicit action</span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
             {% endfor %}
         </div>
+        {% else %}
+        <div class="alert alert-warning">
+            <i class="fas fa-info-circle"></i> Tidak ada policy statement yang tersedia.
+        </div>
+        {% endif %}
     </div>
 
     <!-- Communities Tab -->
@@ -241,22 +277,77 @@ function refreshPolicyOptions() {
 document.addEventListener('DOMContentLoaded', function() {
     const hash = window.location.hash;
     if (hash) {
-        const tab = new bootstrap.Tab(document.querySelector(hash + '-tab'));
-        tab.show();
+        const tabTrigger = document.querySelector(hash + '-tab');
+        if (tabTrigger) {
+            const tab = new bootstrap.Tab(tabTrigger);
+            tab.show();
+        }
     }
     
     // Update URL when tab changes
-    document.getElementById('policyTabs').addEventListener('shown.bs.tab', function (e) {
-        window.location.hash = e.target.getAttribute('data-bs-target').replace('#', '');
-    });
+    const policyTabsEl = document.getElementById('policyTabs');
+    if (policyTabsEl) {
+        policyTabsEl.addEventListener('shown.bs.tab', function (e) {
+            window.location.hash = e.target.getAttribute('data-bs-target').replace('#', '');
+        });
+    }
+
+    const searchInput = document.getElementById('policySearchInput');
+    if (searchInput) {
+        const policyCards = Array.from(document.querySelectorAll('#policy .policy-card'));
+        const emptyNotice = document.getElementById('policySearchEmpty');
+
+        const applyFilter = () => {
+            const query = searchInput.value.trim().toLowerCase();
+            let visibleCount = 0;
+
+            policyCards.forEach(card => {
+                const policyNameEl = card.querySelector('.policy-name');
+                const policyName = policyNameEl ? policyNameEl.textContent.trim().toLowerCase() : '';
+                const termRows = Array.from(card.querySelectorAll('tbody tr'));
+                let anyVisibleTerm = false;
+
+                termRows.forEach(row => {
+                    const matches = !query || row.textContent.toLowerCase().includes(query);
+                    row.classList.toggle('d-none', !!query && !matches);
+                    if (matches) {
+                        anyVisibleTerm = true;
+                    }
+                });
+
+                if (query && policyName.includes(query)) {
+                    anyVisibleTerm = true;
+                    termRows.forEach(row => row.classList.remove('d-none'));
+                }
+
+                const shouldShow = !query || anyVisibleTerm;
+                card.classList.toggle('d-none', !shouldShow);
+                if (shouldShow) {
+                    visibleCount += 1;
+                }
+            });
+
+            if (emptyNotice) {
+                emptyNotice.classList.toggle('d-none', visibleCount > 0);
+            }
+        };
+
+        searchInput.addEventListener('input', applyFilter);
+
+        if (policyTabsEl) {
+            policyTabsEl.addEventListener('shown.bs.tab', function (e) {
+                if (e.target.id === 'policy-tab') {
+                    applyFilter();
+                }
+            });
+        }
+
+        applyFilter();
+    }
 });
 </script>
 
 <style>
-.accordion-button {
-    font-weight: 600;
-}
-
 .badge {
     font-size: 0.75rem;
 }
@@ -269,6 +360,38 @@ document.addEventListener('DOMContentLoaded', function() {
 .card:hover {
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
     transition: all 0.3s ease;
+}
+
+.audit-hint {
+    font-size: 0.875rem;
+}
+
+.policy-card .card-header {
+    border-bottom: none;
+}
+
+.policy-search-controls .input-group-text {
+    background-color: #f8f9fa;
+}
+
+.policy-search-controls .form-control {
+    box-shadow: none;
+}
+
+.policy-term-table th {
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #6c757d;
+}
+
+.policy-term-table td {
+    vertical-align: top;
+    font-size: 0.85rem;
+}
+
+.policy-term-table .badge {
+    font-size: 0.7rem;
 }
 
 .nav-tabs .nav-link {
