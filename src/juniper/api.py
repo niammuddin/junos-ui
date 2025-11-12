@@ -169,29 +169,47 @@ class JuniperAPI:
             return False, error_msg
 
     def _clean_mime_response(self, response_text):
-        """Membersihkan MIME boundary dari response"""
-        # Cari bagian JSON dalam response
-        lines = response_text.split('\n')
-        json_started = False
-        json_lines = []
-        
-        for line in lines:
-            line = line.strip()
-            if line.startswith('{'):
-                json_started = True
-            if json_started:
-                json_lines.append(line)
-            if line.startswith('--') and 'Content-Type' in line:
-                # Skip MIME boundary
+        """Extract the first complete JSON object from a multipart response."""
+        if not response_text:
+            return response_text
+
+        start = response_text.find('{')
+        if start == -1:
+            return response_text
+
+        depth = 0
+        in_string = False
+        escape = False
+
+        for idx in range(start, len(response_text)):
+            ch = response_text[idx]
+
+            if in_string:
+                if escape:
+                    escape = False
+                elif ch == '\\':
+                    escape = True
+                elif ch == '"':
+                    in_string = False
                 continue
-        
-        if json_lines:
-            cleaned_json = '\n'.join(json_lines)
-            print(f"🔧 CLEANED JSON: {cleaned_json[:300]}...")
-            return cleaned_json
-        
-        # Jika tidak ditemukan JSON, return original (akan error di parser)
-        return response_text
+
+            if ch == '"':
+                in_string = True
+                continue
+
+            if ch == '{':
+                depth += 1
+            elif ch == '}':
+                depth -= 1
+                if depth == 0:
+                    cleaned_json = response_text[start : idx + 1]
+                    print(f"🔧 CLEANED JSON: {cleaned_json[:300]}...")
+                    return cleaned_json
+
+        # Fallback: return substring from first JSON brace
+        cleaned_json = response_text[start:]
+        print(f"🔧 CLEANED JSON (fallback): {cleaned_json[:300]}...")
+        return cleaned_json
 
     def _extract_json_sections(self, response_text):
         """Ekstrak setiap bagian JSON dari response multipart"""
