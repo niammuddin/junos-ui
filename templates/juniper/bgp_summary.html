@@ -45,12 +45,24 @@
 </div>
 
 <div class="card mb-4">
-    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+    <div class="card-header bg-dark text-white d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 peer-card-header">
         <h5 class="card-title mb-0"><i class="fas fa-network-wired"></i> BGP Peers ({{ bgp_data.peers|length }})</h5>
-        <div class="btn-group" role="group">
-            <button type="button" class="btn btn-sm btn-outline-light" onclick="filterPeers('all')">All</button>
-            <button type="button" class="btn btn-sm btn-outline-success" onclick="filterPeers('established')">Established</button>
-            <button type="button" class="btn btn-sm btn-outline-danger" onclick="filterPeers('down')">Down</button>
+        <div class="peer-header-tools d-flex flex-column flex-md-row align-items-md-center gap-2 w-100 w-md-auto ms-md-auto">
+            <div class="peer-filter-group">
+                <button type="button" class="peer-filter-btn active" data-filter="all" onclick="filterPeers('all')">All</button>
+                <button type="button" class="peer-filter-btn" data-filter="established" onclick="filterPeers('established')">Established</button>
+                <button type="button" class="peer-filter-btn" data-filter="down" onclick="filterPeers('down')">Down</button>
+            </div>
+            <div class="input-group input-group-sm peer-search">
+                <span class="input-group-text">
+                    <i class="fas fa-search"></i>
+                </span>
+                <input type="text"
+                       class="form-control"
+                       placeholder="Cari peer / AS / deskripsi"
+                       aria-label="Cari peer"
+                       oninput="searchPeers(this.value)">
+            </div>
         </div>
     </div>
     <div class="card-body p-0">
@@ -272,25 +284,47 @@
 {% block scripts %}
 <script>
 
+let currentPeerFilter = 'all';
+let currentSearchTerm = '';
+
 document.addEventListener('DOMContentLoaded', function() {
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
+
+    setActivePeerFilter(currentPeerFilter);
 });
 
-function filterPeers(status) {
+function applyPeerFilters() {
     const rows = document.querySelectorAll('.peer-row');
     rows.forEach(row => {
-        if (status === 'all') {
-            row.style.display = '';
-        } else if (status === 'established' && row.classList.contains('table-established')) {
-            row.style.display = '';
-        } else if (status === 'down' && row.classList.contains('table-danger')) {
-            row.style.display = '';
-        } else {
-            row.style.display = 'none';
-        }
+        const matchesStatus =
+            currentPeerFilter === 'all' ||
+            (currentPeerFilter === 'established' && row.classList.contains('table-established')) ||
+            (currentPeerFilter === 'down' && row.classList.contains('table-danger'));
+
+        const rowText = row.innerText.toLowerCase();
+        const matchesSearch = !currentSearchTerm || rowText.includes(currentSearchTerm);
+
+        row.style.display = matchesStatus && matchesSearch ? '' : 'none';
+    });
+}
+
+function filterPeers(status) {
+    currentPeerFilter = status;
+    applyPeerFilters();
+    setActivePeerFilter(status);
+}
+
+function searchPeers(value) {
+    currentSearchTerm = value.trim().toLowerCase();
+    applyPeerFilters();
+}
+
+function setActivePeerFilter(status) {
+    document.querySelectorAll('.peer-filter-btn').forEach(button => {
+        button.classList.toggle('active', button.dataset.filter === status);
     });
 }
 
@@ -352,6 +386,100 @@ function refreshPeer(deviceId, peerAddress, evt) {
 .btn-sm {
     padding: 0.25rem 0.5rem;
     font-size: 0.75rem;
+}
+
+.peer-card-header {
+    background-color: #1d1f24 !important;
+}
+
+.peer-header-tools {
+    width: 100%;
+    max-width: 540px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.peer-filter-group {
+    display: flex;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0.5rem;
+    background-color: #272b33;
+    overflow: hidden;
+}
+
+.peer-filter-btn {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: #e0e0e0;
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 0.35rem 0.75rem;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.peer-filter-btn + .peer-filter-btn {
+    border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.peer-filter-btn:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.peer-filter-btn.active {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.peer-filter-btn[data-filter="all"].active {
+    background-color: #3a3f47;
+}
+
+.peer-filter-btn[data-filter="established"].active {
+    background-color: #1f6f3f;
+}
+
+.peer-filter-btn[data-filter="down"].active {
+    background-color: #86212f;
+}
+
+.peer-search {
+    width: 100%;
+}
+
+.peer-search .input-group-text {
+    background-color: #272b33;
+    color: #bfc5d0;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-right: none;
+}
+
+.peer-search .form-control {
+    background-color: #272b33;
+    color: #f8f9fa;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-left: none;
+}
+
+.peer-search .form-control::placeholder {
+    color: rgba(255, 255, 255, 0.55);
+}
+
+@media (min-width: 768px) {
+    .peer-header-tools {
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .peer-filter-group {
+        margin-bottom: 0;
+    }
+
+    .peer-search {
+        flex: 1;
+        min-width: 260px;
+    }
 }
 </style>
 {% endblock %}
