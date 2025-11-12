@@ -135,9 +135,9 @@ Group=junos
 WorkingDirectory=/home/junos-ui
 Environment="PATH=/home/junos-ui/.venv/bin"
 EnvironmentFile=-/home/junos-ui/.env
-Environment="GUNICORN_BIND=0.0.0.0:8000"
+Environment="GUNICORN_BIND=0.0.0.0:5000"
 
-ExecStart=/home/junos-ui/.venv/bin/gunicorn -c /home/junos-ui/gunicorn.conf.py "app:create_app()"
+ExecStart=/home/junos-ui/.venv/bin/gunicorn -c /home/junos-ui/gunicorn.conf.py app:create_app()
 
 Restart=always
 
@@ -151,6 +151,8 @@ WantedBy=multi-user.target
 sudo systemctl daemon-reload
 sudo systemctl enable junos-ui
 sudo systemctl start junos-ui
+sudo systemctl status junos-ui
+sudo journalctl -u junos-ui -e --no-pager
 ```
 
 ### 4. Cek Status Service
@@ -160,7 +162,7 @@ sudo systemctl status junos-ui
 ```
 ---
 
-Aplikasi akan berjalan di `http://127.0.0.1:8000`
+Aplikasi akan berjalan di `http://127.0.0.1:5000`
 
 #### Opsi Tuning Gunicorn
 
