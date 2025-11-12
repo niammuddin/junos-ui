@@ -141,6 +141,7 @@ class JuniperAPI:
             
             print(f"🔧 POLICY OPTIONS STATUS: {response.status_code}")
             print(f"🔧 RESPONSE TEXT: {response.text[:500]}...")  # Debug pertama 500 karakter
+            # print(f"🔧 RESPONSE TEXT: {response.text}")
             
             if response.status_code == 200:
                 try:
@@ -470,7 +471,9 @@ class JuniperAPI:
                 
             policy = {
                 'name': ps.get('name', 'N/A'),
-                'terms': []
+                'terms': [],
+                'max_local_preference': None,
+                'max_as_path_count': None
             }
             
             terms = ps.get('term', [])
@@ -492,6 +495,18 @@ class JuniperAPI:
                     term_data['default_then'] = self._parse_then_actions(ps.get('then', {}))
                 
                 policy['terms'].append(term_data)
+                
+                # Track metrics for sorting/filtering di UI
+                term_then = term_data.get('then', {})
+                lp_value = term_then.get('local_preference')
+                if isinstance(lp_value, (int, float)):
+                    if policy['max_local_preference'] is None or lp_value > policy['max_local_preference']:
+                        policy['max_local_preference'] = lp_value
+                
+                as_count = term_then.get('as_path_count')
+                if isinstance(as_count, int):
+                    if policy['max_as_path_count'] is None or as_count > policy['max_as_path_count']:
+                        policy['max_as_path_count'] = as_count
             
             result.append(policy)
         
@@ -531,15 +546,39 @@ class JuniperAPI:
         elif then_actions.get('reject') is not None:
             actions['reject'] = True
         
-        if then_actions.get('local-preference'):
-            lp = then_actions['local-preference']
-            if isinstance(lp, dict) and 'local-preference' in lp:
-                actions['local_preference'] = lp['local-preference']
+        lp_data = then_actions.get('local-preference')
+        if lp_data is not None:
+            lp_value = None
+            if isinstance(lp_data, dict):
+                lp_value = lp_data.get('local-preference')
             else:
-                actions['local_preference'] = 'N/A'
+                lp_value = lp_data
+            try:
+                actions['local_preference'] = int(lp_value)
+            except (TypeError, ValueError):
+                actions['local_preference'] = lp_value
         
-        if then_actions.get('as-path-prepend'):
-            actions['as_path_prepend'] = then_actions['as-path-prepend']
+        as_path_data = then_actions.get('as-path-prepend')
+        if as_path_data is not None:
+            as_path_parts = []
+            if isinstance(as_path_data, str):
+                as_path_parts = [part for part in as_path_data.split() if part]
+            elif isinstance(as_path_data, list):
+                for entry in as_path_data:
+                    if isinstance(entry, str):
+                        as_path_parts.extend([part for part in entry.split() if part])
+                    elif entry:
+                        as_path_parts.append(str(entry))
+            elif isinstance(as_path_data, dict):
+                for value in as_path_data.values():
+                    if isinstance(value, str):
+                        as_path_parts.extend([part for part in value.split() if part])
+            else:
+                as_path_parts.append(str(as_path_data))
+            
+            if as_path_parts:
+                actions['as_path_prepend'] = ' '.join(as_path_parts)
+                actions['as_path_count'] = len(as_path_parts)
         
         if then_actions.get('community'):
             communities = then_actions['community']

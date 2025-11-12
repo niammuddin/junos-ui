@@ -109,16 +109,52 @@
             <span class="badge bg-light text-primary border border-primary">Total: {{ policy_data.policy_statements|length }} policy</span>
         </div>
 
-        <div class="row g-2 align-items-end mb-4 policy-search-controls">
-            <div class="col-md-6">
+        <div class="row g-3 align-items-end mb-4 policy-search-controls">
+            <div class="col-lg-4 col-md-6">
                 <label for="policySearchInput" class="form-label mb-1">Filter Pencarian</label>
                 <div class="input-group input-group-sm">
                     <span class="input-group-text"><i class="fas fa-search"></i></span>
                     <input type="search" class="form-control" id="policySearchInput" placeholder="Cari policy, term, prefix list, atau aksi..." autocomplete="off">
                 </div>
             </div>
-            <div class="col-md-3 col-6">
-                <small class="text-muted">Penelusuran bersifat instan dan tidak peka huruf besar/kecil.</small>
+            <div class="col-lg-4 col-md-6">
+                <label class="form-label mb-1 d-flex justify-content-between">
+                    <span>Sortir Local Preference</span>
+                    <small class="text-muted">klik untuk tinggi/rendah</small>
+                </label>
+                <div class="btn-group w-100 policy-sort-group" role="group" aria-label="Sort Local Preference">
+                    <button type="button" class="btn btn-outline-secondary btn-sm policy-sort-btn" data-policy-sort="localPref" data-sort-direction="desc">
+                        Tinggi <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-caret-up-fill" viewBox="0 0 16 16">
+  <path d="m7.247 4.86-4.796 5.481c-.566.647-.106 1.659.753 1.659h9.592a1 1 0 0 0 .753-1.659l-4.796-5.48a1 1 0 0 0-1.506 0z"/>
+</svg>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm policy-sort-btn" data-policy-sort="localPref" data-sort-direction="asc">
+                        Rendah <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-caret-down-fill" viewBox="0 0 16 16">
+  <path d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/>
+</svg>
+                    </button>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <label class="form-label mb-1 d-flex justify-content-between">
+                    <span>Sortir Jumlah AS Path</span>
+                    <small class="text-muted">berdasarkan hitungan prepend</small>
+                </label>
+                <div class="btn-group w-100 policy-sort-group" role="group" aria-label="Sort AS Path">
+                    <button type="button" class="btn btn-outline-secondary btn-sm policy-sort-btn" data-policy-sort="asPath" data-sort-direction="desc">
+                        Terbanyak <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-caret-up-fill" viewBox="0 0 16 16">
+  <path d="m7.247 4.86-4.796 5.481c-.566.647-.106 1.659.753 1.659h9.592a1 1 0 0 0 .753-1.659l-4.796-5.48a1 1 0 0 0-1.506 0z"/>
+</svg>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm policy-sort-btn" data-policy-sort="asPath" data-sort-direction="asc">
+                        Tersedikit <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-caret-down-fill" viewBox="0 0 16 16">
+  <path d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/>
+</svg>
+                    </button>
+                </div>
+            </div>
+            <div class="col-12">
+                <small class="text-muted">Klik tombol yang sama lagi untuk kembali ke urutan asli.</small>
             </div>
         </div>
 
@@ -127,7 +163,10 @@
                 <i class="fas fa-info-circle"></i> Tidak ada policy atau term yang cocok dengan kata kunci pencarian.
             </div>
             {% for policy in policy_data.policy_statements %}
-            <div class="card policy-card mb-4">
+            <div class="card policy-card mb-4"
+                 data-original-order="{{ loop.index0 }}"
+                 data-max-local-pref="{% if policy.max_local_preference is not none %}{{ policy.max_local_preference }}{% endif %}"
+                 data-max-as-count="{% if policy.max_as_path_count is not none %}{{ policy.max_as_path_count }}{% endif %}">
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <div class="d-flex align-items-center gap-2">
                         <i class="fas fa-project-diagram text-white"></i>
@@ -147,7 +186,12 @@
                             </thead>
                             <tbody>
                                 {% for term in policy.terms %}
-                                <tr>
+                                {% set term_local_pref = term.then.local_preference if term.then.local_preference is defined else none %}
+                                {% set term_as_count = term.then.as_path_count if term.then.as_path_count is defined else none %}
+                                <tr class="policy-term-row"
+                                    data-original-order="{{ loop.index0 }}"
+                                    data-local-pref="{% if term_local_pref is not none %}{{ term_local_pref }}{% endif %}"
+                                    data-as-count="{% if term_as_count is not none %}{{ term_as_count }}{% endif %}">
                                     <td>
                                         <div class="d-flex flex-column">
                                             <span class="fw-semibold term-name">{{ term.name }}</span>
@@ -184,15 +228,20 @@
                                             {% elif term.then.reject %}
                                             <span class="badge bg-danger"><i class="fas fa-times"></i> Reject</span>
                                             {% endif %}
-                                            {% if term.then.local_preference %}
+                                            {% if term_local_pref is not none %}
                                             <span class="badge bg-warning text-dark">
-                                                <i class="fas fa-star"></i> Local Pref: {{ term.then.local_preference }}
+                                                <i class="fas fa-star"></i> Local Pref: {{ term_local_pref }}
                                             </span>
                                             {% endif %}
                                             {% if term.then.as_path_prepend %}
                                             <span class="badge bg-info">
                                                 <i class="fas fa-retweet"></i> AS Path: {{ term.then.as_path_prepend }}
                                             </span>
+                                            {% if term_as_count is not none %}
+                                            <span class="badge bg-primary">
+                                                {{ term_as_count }}
+                                            </span>
+                                            {% endif %}
                                             {% endif %}
                                             {% if term.then.community_add %}
                                             <span class="badge bg-secondary">
@@ -293,57 +342,124 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     const searchInput = document.getElementById('policySearchInput');
-    if (searchInput) {
-        const policyCards = Array.from(document.querySelectorAll('#policy .policy-card'));
-        const emptyNotice = document.getElementById('policySearchEmpty');
+    const sortButtons = document.querySelectorAll('.policy-sort-btn');
+    const policyCards = Array.from(document.querySelectorAll('#policy .policy-card'));
+    const policyGrid = document.querySelector('#policy .policy-statement-grid');
+    const emptyNotice = document.getElementById('policySearchEmpty');
+    let activeSort = { key: null, direction: null };
 
-        const applyFilter = () => {
-            const query = searchInput.value.trim().toLowerCase();
-            let visibleCount = 0;
+    const parseNumber = (value) => {
+        if (value === null || value === undefined || value === '') return null;
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : null;
+    };
 
-            policyCards.forEach(card => {
-                const policyNameEl = card.querySelector('.policy-name');
-                const policyName = policyNameEl ? policyNameEl.textContent.trim().toLowerCase() : '';
-                const termRows = Array.from(card.querySelectorAll('tbody tr'));
-                let anyVisibleTerm = false;
+    const applySort = () => {
+        if (!policyGrid) return;
+        const { key, direction } = activeSort;
+        const sortedCards = policyCards.slice().sort((a, b) => {
+            const orderA = parseNumber(a.dataset.originalOrder) ?? 0;
+            const orderB = parseNumber(b.dataset.originalOrder) ?? 0;
 
-                termRows.forEach(row => {
-                    const matches = !query || row.textContent.toLowerCase().includes(query);
-                    row.classList.toggle('d-none', !!query && !matches);
-                    if (matches) {
-                        anyVisibleTerm = true;
-                    }
-                });
-
-                if (query && policyName.includes(query)) {
-                    anyVisibleTerm = true;
-                    termRows.forEach(row => row.classList.remove('d-none'));
-                }
-
-                const shouldShow = !query || anyVisibleTerm;
-                card.classList.toggle('d-none', !shouldShow);
-                if (shouldShow) {
-                    visibleCount += 1;
-                }
-            });
-
-            if (emptyNotice) {
-                emptyNotice.classList.toggle('d-none', visibleCount > 0);
+            if (!key) {
+                return orderA - orderB;
             }
-        };
 
-        searchInput.addEventListener('input', applyFilter);
+            const valueA = key === 'localPref'
+                ? parseNumber(a.dataset.maxLocalPref)
+                : parseNumber(a.dataset.maxAsCount);
+            const valueB = key === 'localPref'
+                ? parseNumber(b.dataset.maxLocalPref)
+                : parseNumber(b.dataset.maxAsCount);
 
-        if (policyTabsEl) {
-            policyTabsEl.addEventListener('shown.bs.tab', function (e) {
-                if (e.target.id === 'policy-tab') {
-                    applyFilter();
+            if (valueA === null && valueB === null) {
+                return orderA - orderB;
+            }
+            if (valueA === null) return 1;
+            if (valueB === null) return -1;
+            if (valueA === valueB) {
+                return orderA - orderB;
+            }
+            return direction === 'asc' ? valueA - valueB : valueB - valueA;
+        });
+
+        sortedCards.forEach(card => policyGrid.appendChild(card));
+    };
+
+    const setActiveSortButton = (button) => {
+        sortButtons.forEach(btn => btn.classList.remove('active'));
+        if (button) {
+            button.classList.add('active');
+        }
+    };
+
+    sortButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const key = button.dataset.policySort;
+            const direction = button.dataset.sortDirection;
+            const isActive = activeSort.key === key && activeSort.direction === direction;
+
+            if (isActive) {
+                activeSort = { key: null, direction: null };
+                setActiveSortButton(null);
+            } else {
+                activeSort = { key, direction };
+                setActiveSortButton(button);
+            }
+
+            applySort();
+        });
+    });
+
+    const applyFilter = () => {
+        const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+        let visibleCount = 0;
+
+        policyCards.forEach(card => {
+            const policyNameEl = card.querySelector('.policy-name');
+            const policyName = policyNameEl ? policyNameEl.textContent.trim().toLowerCase() : '';
+            const termRows = Array.from(card.querySelectorAll('tbody .policy-term-row'));
+            let anyVisibleTerm = false;
+
+            termRows.forEach(row => {
+                const matches = !query || row.textContent.toLowerCase().includes(query);
+                row.classList.toggle('d-none', !!query && !matches);
+                if (matches) {
+                    anyVisibleTerm = true;
                 }
             });
-        }
 
-        applyFilter();
+            if (query && policyName.includes(query)) {
+                anyVisibleTerm = true;
+                termRows.forEach(row => row.classList.remove('d-none'));
+            }
+
+            const shouldShow = !query || anyVisibleTerm;
+            card.classList.toggle('d-none', !shouldShow);
+            if (shouldShow) {
+                visibleCount += 1;
+            }
+        });
+
+        if (emptyNotice) {
+            emptyNotice.classList.toggle('d-none', visibleCount > 0);
+        }
+    };
+
+    if (searchInput) {
+        searchInput.addEventListener('input', applyFilter);
     }
+
+    if (policyTabsEl) {
+        policyTabsEl.addEventListener('shown.bs.tab', function (e) {
+            if (e.target.id === 'policy-tab') {
+                applyFilter();
+            }
+        });
+    }
+
+    applyFilter();
+    applySort();
 });
 </script>
 
@@ -376,6 +492,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
 .policy-search-controls .form-control {
     box-shadow: none;
+}
+
+.policy-sort-group .btn {
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.policy-sort-group .btn.active {
+    background-color: #0d6efd;
+    color: #fff;
+    border-color: #0a58ca;
 }
 
 .policy-term-table th {
