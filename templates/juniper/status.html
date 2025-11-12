@@ -4,272 +4,421 @@
 
 {% block content %}
 <style>
-  /* Subtle polish */
-  .page-title { letter-spacing: .2px; }
-  .card { border-radius: 1rem; }
-  .card-header {
-    border-top-left-radius: 1rem !important;
-    border-top-right-radius: 1rem !important;
-    background: linear-gradient(135deg, var(--bs-primary), #3b82f6);
-  }
-  .table-borderless th { color: var(--bs-gray-600); font-weight: 600; }
-  .stat-badge { font-size: .75rem; }
-  .keyline { border-top: 1px dashed var(--bs-gray-300); }
-  .chip { display: inline-flex; align-items: center; gap:.35rem; padding:.35rem .6rem; border-radius: 999px; background: var(--bs-gray-100); font-size:.8rem; }
-  .dim { color: var(--bs-gray-600); }
-  .btn-icon { display:inline-flex; align-items:center; gap:.5rem; }
-  /* Skeletons for loading states */
-  .skeleton { position:relative; overflow:hidden; background: #eef2f4; border-radius:.5rem; }
+  .status-eyebrow { letter-spacing:.18em; text-transform:uppercase; font-size:.75rem; color:var(--bs-gray-600); font-weight:600; }
+  .status-title { font-size:1.9rem; font-weight:700; }
+  .status-chip { display:inline-flex; align-items:center; gap:.4rem; padding:.35rem .9rem; border-radius:999px; background:var(--bs-gray-100); font-size:.82rem; color:var(--bs-gray-800); }
+  .status-chip i { color:var(--bs-primary); }
+  .nav-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:.9rem; }
+  .nav-tile { border:1px solid #e5e7eb; border-radius:1rem; padding:1rem; text-decoration:none; color:inherit; background:#fff; transition:.2s; box-shadow:0 .75rem 1.5rem rgba(15,23,42,.05); }
+  .nav-tile small { color:var(--bs-gray-600); display:block; margin-top:.15rem; }
+  .nav-tile i { color:var(--bs-primary); }
+  .nav-tile:hover { transform:translateY(-2px); border-color:var(--bs-primary); color:var(--bs-primary); }
+  .snapshot-panel { border:1px solid #e5e7eb; border-radius:1rem; padding:1.25rem; background:#fff; height:100%; box-shadow:0 .85rem 1.7rem rgba(15,23,42,.04); }
+  .info-label { font-size:.78rem; text-transform:uppercase; letter-spacing:.08em; color:var(--bs-gray-500); margin-bottom:.15rem; display:block; }
+  .info-value { font-size:1rem; font-weight:600; }
+  .info-box { padding:.95rem 1.1rem; border-radius:1rem; border:1px solid #eef1f7; background:#f8fafc; height:100%; }
+  .route-chip { display:inline-flex; align-items:center; gap:.35rem; padding:.3rem .8rem; border-radius:999px; background:#f1f5f9; font-size:.78rem; color:#0f172a; font-weight:600; }
+  .skeleton { position:relative; overflow:hidden; background:#edf1f4; border-radius:1rem; min-height:150px; }
   .skeleton::after { content:""; position:absolute; inset:0; transform:translateX(-100%);
-    background: linear-gradient(90deg, rgba(255,255,255,0) 0, rgba(255,255,255,.6) 50%, rgba(255,255,255,0) 100%);
+    background: linear-gradient(90deg, rgba(255,255,255,0) 0, rgba(255,255,255,.65) 50%, rgba(255,255,255,0) 100%);
     animation: shimmer 1.4s infinite; }
   @keyframes shimmer { 100% { transform:translateX(100%); } }
 </style>
 
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
-  <div class="d-flex align-items-center gap-2">
-    <h2 class="page-title mb-0"><i class="fas fa-chart-bar me-2"></i>Status Device: {{ device.name }}</h2>
-    <span class="chip" title="IP Address"><i class="fas fa-network-wired"></i>{{ device.ip_address }}</span>
-    {% if sys_data and sys_data.model %}<span class="chip" title="Model"><i class="fas fa-microchip"></i>{{ sys_data.model }}</span>{% endif %}
-    {% if sys_data and sys_data.os_version %}<span class="chip" title="Junos / OS Version"><i class="fas fa-code"></i>{{ sys_data.os_version }}</span>{% endif %}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+  <div>
+    <div class="status-eyebrow mb-1">Status Device</div>
+    <div class="status-title d-flex align-items-center gap-3 flex-wrap mb-2">
+      {{ device.name }}
+      {% if device.description %}
+        <span class="badge text-bg-light rounded-pill">{{ device.description }}</span>
+      {% endif %}
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <span class="status-chip"><i class="fas fa-network-wired"></i>{{ device.ip_address }}</span>
+      {% if device.api_port %}<span class="status-chip"><i class="fas fa-plug"></i>REST {{ device.api_port }}</span>{% endif %}
+      {% if device.gnmi_port %}<span class="status-chip"><i class="fas fa-wave-square"></i>gNMI {{ device.gnmi_port }}</span>{% endif %}
+    </div>
   </div>
   <div class="d-flex flex-wrap gap-2">
-    <a href="{{ url_for('juniper.devices') }}" class="btn btn-secondary btn-icon">
-      <i class="fas fa-arrow-left"></i><span>Kembali</span>
+    <a href="{{ url_for('juniper.devices') }}" class="btn btn-outline-secondary">
+      <i class="fas fa-arrow-left me-1"></i>Kembali
     </a>
-    <a href="" class="btn btn-outline-primary btn-icon" id="btn-refresh" data-bs-toggle="tooltip" data-bs-title="Muat ulang data (HTTP refresh)"><i class="fas fa-rotate"></i><span>Refresh</span></a>
+    <button class="btn btn-primary" id="btn-refresh">
+      <span class="me-1"><i class="fas fa-rotate"></i></span>Muat ulang data
+    </button>
   </div>
 </div>
 
-<!-- Summary cards row -->
-<div class="row g-4 mb-4">
-  <!-- Device Info -->
-  <div class="col-xl-4 col-lg-6">
-    <div class="card h-100 shadow-sm border-0">
-      <div class="card-header text-white"><h5 class="card-title mb-0"><i class="fas fa-info-circle me-2"></i>Device Info</h5></div>
-      <div class="card-body py-4">
-        <table class="table table-sm table-borderless mb-3 align-middle">
-          <tr><th width="45%">Nama</th><td>{{ device.name }}</td></tr>
-          <tr>
-            <th>IP Address</th>
-            <td class="d-flex align-items-center gap-2">
-              <span id="ip-text">{{ device.ip_address }}</span>
-              <button type="button" class="btn btn-light btn-sm" data-copy="#ip-text" data-bs-toggle="tooltip" data-bs-title="Salin IP">
-                <i class="fas fa-copy"></i>
-              </button>
-            </td>
-          </tr>
-          <tr><th>REST API Port</th><td>{{ device.api_port or '-' }}</td></tr>
-          <tr>
-            <th>REST API</th>
-            <td>
-              {{ 'HTTPS' if device.api_use_ssl else 'HTTP' }}
-              {% if device.api_use_ssl and not device.api_verify_ssl %}
-                <span class="badge bg-warning text-dark stat-badge ms-1">Skip verify</span>
-              {% elif device.api_use_ssl and device.api_verify_ssl %}
-                <span class="badge bg-success stat-badge ms-1">Verified</span>
-              {% elif not device.api_use_ssl %}
-                <span class="badge bg-danger stat-badge ms-1">Unsecured</span>
-              {% endif %}
-            </td>
-          </tr>
-          <tr><th>gNMI Port</th><td>{{ device.gnmi_port or 9339 }}</td></tr>
-          <tr>
-            <th>gNMI Security</th>
-            <td>
-              {% if not device.gnmi_use_ssl %}
-                Insecure <span class="badge bg-danger stat-badge ms-1">Plaintext</span>
-              {% else %}
-                TLS
-                {% if device.gnmi_use_ssl and not device.gnmi_verify_ssl %}
-                  <span class="badge bg-warning text-dark stat-badge ms-1">Skip verify</span>
-                {% else %}
-                  <span class="badge bg-success stat-badge ms-1">Verified</span>
-                {% endif %}
-              {% endif %}
-            </td>
-          </tr>
-          <tr>
-            <th>Username</th>
-            <td class="d-flex align-items-center gap-2">
-              <span id="user-text">{{ device.username }}</span>
-              <button type="button" class="btn btn-light btn-sm" data-copy="#user-text" data-bs-toggle="tooltip" data-bs-title="Salin username">
-                <i class="fas fa-copy"></i>
-              </button>
-            </td>
-          </tr>
-          <tr><th>Description</th><td>{{ device.description or '-' }}</td></tr>
-        </table>
-        <!-- <div class=" pt-3">
-          <div class="dim small">ID Perangkat: <code>{{ device.id }}</code></div>
-        </div> -->
-      </div>
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body">
+    <div class="nav-grid">
+      <a class="nav-tile" href="{{ url_for('juniper.device_bgp_summary', device_id=device.id) }}">
+        <span><i class="fas fa-project-diagram me-1"></i>BGP Summary</span>
+        <small>Status peer & statistik sesi BGP</small>
+      </a>
+      <a class="nav-tile" href="{{ url_for('juniper.policy_options', device_id=device.id) }}">
+        <span><i class="fas fa-cogs me-1"></i>Policy Options</span>
+        <small>Prefix list & policy statement</small>
+      </a>
+      <a class="nav-tile" href="{{ url_for('juniper.static_routes', device_id=device.id) }}">
+        <span><i class="fas fa-route me-1"></i>Static Routes</span>
+        <small>Rute statik terkonfigurasi</small>
+      </a>
+      <a class="nav-tile" href="{{ url_for('juniper.interfaces', device_id=device.id) }}">
+        <span><i class="fas fa-network-wired me-1"></i>Interfaces</span>
+        <small>Daftar interface & status</small>
+      </a>
+      <a class="nav-tile" href="{{ url_for('juniper.interface_traffic', device_id=device.id) }}">
+        <span><i class="fas fa-tachometer-alt me-1"></i>Live Traffic</span>
+        <small>Streaming telemetry via gNMI</small>
+      </a>
     </div>
   </div>
+</div>
 
-  <!-- System Information -->
-  <div class="col-xl-4 col-lg-6">
-    <div class="card h-100 shadow-sm border-0">
-      <div class="card-header text-white"><h5 class="card-title mb-0"><i class="fas fa-desktop me-2"></i>System Information</h5></div>
-      <div class="card-body py-4">
-        {% if sys_data %}
-          <table class="table table-sm table-borderless mb-0">
-            <tr><th width="45%">Hostname</th><td>{{ sys_data.hostname }}</td></tr>
-            <tr><th>Model</th><td>{{ sys_data.model }}</td></tr>
-            <tr><th>OS Version</th><td>{{ sys_data.os_version }}</td></tr>
-            <tr><th>Serial Number</th><td>{{ sys_data.serial_number }}</td></tr>
-          </table>
-        {% elif sys_error %}
-          <div class="alert alert-danger mb-0">
-            <i class="fas fa-exclamation-triangle me-1"></i>{{ sys_error }}
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body">
+    <div class="row g-4 align-items-stretch">
+      <div class="col-lg-6">
+        <div class="snapshot-panel">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+              <h5 class="mb-1">System Overview</h5>
+              <small class="text-muted">Ditarik asinkron, halaman langsung tampil.</small>
+            </div>
           </div>
-        {% else %}
-          <div class="skeleton" style="height: 112px;"></div>
-          <div class="dim small mt-2"><i class="fas fa-sync-alt fa-spin me-1"></i>Memuat system information…</div>
-        {% endif %}
+          <div class="alert alert-warning d-none" role="alert" data-system-error></div>
+          <div class="skeleton" data-system-skeleton></div>
+          <div class="d-none" data-system-content></div>
+        </div>
       </div>
-    </div>
-  </div>
-
-  <!-- Route Engine -->
-  <div class="col-xl-4 col-lg-12">
-    <div class="card h-100 shadow-sm border-0">
-      <div class="card-header text-white"><h5 class="card-title mb-0"><i class="fas fa-server me-2"></i>Route Engine</h5></div>
-      <div class="card-body py-4">
-        {% if re_data %}
-          {% set re_status = (re_data.status|lower if re_data.status else '') %}
-          {% set status_color = 'success' if 'ok' in re_status or 'online' in re_status else ('warning' if 'degrad' in re_status else 'danger') %}
-          <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-            <span class="badge bg-{{ status_color }} stat-badge"><i class="fas fa-circle me-1"></i>{{ re_data.status }}</span>
-            {% if re_data.uptime and re_data.uptime.up_time %}
-              <span class="chip" title="Up Time"><i class="fas fa-clock"></i>{{ re_data.uptime.up_time }}</span>
-            {% endif %}
+      <div class="col-lg-6">
+        <div class="snapshot-panel">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+              <h5 class="mb-1">Profil Koneksi</h5>
+              <small class="text-muted">Data ini diambil langsung dari database.</small>
+            </div>
           </div>
-
-          <table class="table table-sm table-borderless mb-3">
-            <tr><th width="45%">Model</th><td>{{ re_data.model }}</td></tr>
-            <tr>
-              <th>Temperature</th>
-              <td>
-                {% set t = (re_data.temperature.celsius | float) if re_data.temperature and (re_data.temperature.celsius is not none) else none %}
-                {% set t_class = 'text-success' if (t is number and t < 65) else ('text-warning' if (t is number and t < 80) else 'text-danger') %}
-                <span class="{{ t_class }}">{{ re_data.temperature.text }}</span>
-                {% if t is not none %}<span class="text-muted">({{ t }}°C)</span>{% endif %}
-              </td>
-            </tr>
-            <tr>
-              <th>CPU Usage</th>
-              <td>
-                {% set userp = re_data.cpu.user or 0 %}
-                {% set sysp  = re_data.cpu.system or 0 %}
-                {% set idlep = re_data.cpu.idle or 0 %}
-                <div class="progress" style="height: 10px;">
-                  <div class="progress-bar" role="progressbar" style="width: {{ userp }}%" aria-label="User {{ userp }}%" title="User {{ userp }}%"></div>
-                  <div class="progress-bar" role="progressbar" style="width: {{ sysp }}%" aria-label="System {{ sysp }}%" title="System {{ sysp }}%"></div>
-                  <div class="progress-bar bg-secondary" role="progressbar" style="width: {{ idlep }}%" aria-label="Idle {{ idlep }}%" title="Idle {{ idlep }}%"></div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="info-box">
+                <span class="info-label">REST API</span>
+                <div class="info-value">
+                  {{ 'HTTPS' if device.api_use_ssl else 'HTTP' }} :{{ device.api_port or '-' }}
+                  {% if device.api_use_ssl and not device.api_verify_ssl %}
+                    <span class="badge text-bg-warning text-dark ms-1">Skip verify</span>
+                  {% elif device.api_use_ssl %}
+                    <span class="badge text-bg-success ms-1">Verified</span>
+                  {% else %}
+                    <span class="badge text-bg-danger ms-1">Unsecured</span>
+                  {% endif %}
                 </div>
-                <div class="small dim mt-1">User {{ userp }}% • System {{ sysp }}% • Idle {{ idlep }}%</div>
-              </td>
-            </tr>
-            <tr>
-              <th>Load Average</th>
-              <td>
-                <span class="chip" title="1 min">1m {{ re_data.cpu.load_average.one }}</span>
-                <span class="chip" title="5 min">5m {{ re_data.cpu.load_average.five }}</span>
-                <span class="chip" title="15 min">15m {{ re_data.cpu.load_average.fifteen }}</span>
-              </td>
-            </tr>
-            <tr>
-              <th>Memory</th>
-              <td>
-                {% set buf = re_data.memory.buffer_utilization or 0 %}
-                <div class="mb-1">DRAM {{ re_data.memory.dram }} <span class="dim">/ Installed {{ re_data.memory.installed }}</span></div>
-                <div class="small dim">Buffer Utilization {{ buf }}%</div>
-                <div class="progress" style="height: 8px;">
-                  <div class="progress-bar" role="progressbar" style="width: {{ buf }}%" aria-valuenow="{{ buf }}" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="info-box">
+                <span class="info-label">gNMI</span>
+                <div class="info-value">
+                  Port {{ device.gnmi_port or 9339 }} •
+                  {% if device.gnmi_use_ssl %}
+                    TLS {% if device.gnmi_verify_ssl %}(verify){% else %}(skip verify){% endif %}
+                  {% else %}
+                    Plaintext
+                  {% endif %}
                 </div>
-              </td>
-            </tr>
-            <tr>
-              <th>Uptime</th>
-              <td>
-                {{ re_data.uptime.up_time }}<br>
-                {% if re_data.uptime.start_time %}<small class="text-muted">Since {{ re_data.uptime.start_time }}</small><br>{% endif %}
-                {% if re_data.uptime.last_reboot_reason %}<small class="text-muted">Last reboot: {{ re_data.uptime.last_reboot_reason }}</small>{% endif %}
-              </td>
-            </tr>
-          </table>
-        {% elif re_error %}
-          <div class="alert alert-warning mb-0">
-            <i class="fas fa-exclamation-triangle me-1"></i>{{ re_error }}
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="info-box">
+                <span class="info-label">Username</span>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="info-value" id="user-text">{{ device.username }}</span>
+                  <button class="btn btn-light btn-sm" data-copy="#user-text" data-bs-toggle="tooltip" data-bs-title="Salin username">
+                    <i class="fas fa-copy"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="info-box">
+                <span class="info-label">Deskripsi</span>
+                <div class="info-value">{{ device.description or '-' }}</div>
+              </div>
+            </div>
           </div>
-        {% else %}
-          <div class="skeleton" style="height: 180px;"></div>
-          <div class="dim small mt-2"><i class="fas fa-sync-alt fa-spin me-1"></i>Memuat route engine…</div>
-        {% endif %}
+        </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Navigation Buttons -->
-<div class="d-flex flex-wrap gap-2 mb-4">
-  <div class="btn-group" role="group" aria-label="Navigasi">
-    <a href="{{ url_for('juniper.policy_options', device_id=device.id) }}" class="btn btn-outline-primary btn-sm" data-bs-toggle="tooltip" data-bs-title="Policy Options">
-      <i class="fas fa-cogs me-1"></i>Policy Options
-    </a>
-    <a href="{{ url_for('juniper.device_bgp_summary', device_id=device.id) }}" class="btn btn-outline-primary btn-sm" data-bs-toggle="tooltip" data-bs-title="Ringkasan BGP">
-      <i class="fas fa-project-diagram me-1"></i>BGP Summary
-    </a>
-    <a href="{{ url_for('juniper.static_routes', device_id=device.id) }}" class="btn btn-outline-primary btn-sm" data-bs-toggle="tooltip" data-bs-title="Static Routes">
-      <i class="fas fa-route me-1"></i>Static Routes
-    </a>
-    <a href="{{ url_for('juniper.interfaces', device_id=device.id) }}" class="btn btn-outline-primary btn-sm" data-bs-toggle="tooltip" data-bs-title="Daftar Interfaces">
-      <i class="fas fa-network-wired me-1"></i>View Interfaces
-    </a>
-    <a href="{{ url_for('juniper.interface_traffic', device_id=device.id) }}" class="btn btn-outline-primary btn-sm" data-bs-toggle="tooltip" data-bs-title="Streaming Telemetry">
-      <i class="fas fa-tachometer-alt me-1"></i>Live Traffic
-    </a>
+<div class="card border-0 shadow-sm">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <div>
+        <h5 class="mb-1"><i class="fas fa-server me-2 text-primary"></i>Route Engine</h5>
+        <small class="text-muted">Data dimuat dari API backend tanpa menahan render halaman.</small>
+      </div>
+    </div>
+    <div class="alert alert-warning d-none" role="alert" data-route-error></div>
+    <div class="skeleton" style="min-height:220px;" data-route-skeleton></div>
+    <div class="d-none" data-route-content></div>
   </div>
 </div>
+{% endblock %}
 
-{% if not re_data and re_error %}
-  <div class="alert alert-warning">
-    <i class="fas fa-exclamation-triangle"></i> Tidak dapat mengambil Route Engine info: {{ re_error }}
-  </div>
-{% endif %}
-
+{% block scripts %}
+{{ super() }}
 <script>
-  // Enable Bootstrap tooltips
-  (function(){
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.forEach(function (tooltipTriggerEl) {
-      new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-  })();
+document.addEventListener('DOMContentLoaded', function(){
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+    new bootstrap.Tooltip(tooltipTriggerEl);
+  });
 
-  // Simple refresh
-  document.getElementById('btn-refresh')?.addEventListener('click', function(e){ e.preventDefault(); location.reload(); });
-
-  // Copy helpers
   document.querySelectorAll('[data-copy]').forEach(function(btn){
     btn.addEventListener('click', function(){
-      var sel = this.getAttribute('data-copy');
-      var el = document.querySelector(sel);
-      if (!el) return;
-      var text = (el.innerText || el.textContent || '').trim();
+      var target = document.querySelector(this.getAttribute('data-copy'));
+      if (!target) return;
+      var text = (target.innerText || target.textContent || '').trim();
       if (!text) return;
       navigator.clipboard.writeText(text).then(()=>{
+        var original = this.innerHTML;
         this.innerHTML = '<i class="fas fa-check"></i>';
         this.classList.remove('btn-light');
         this.classList.add('btn-success');
         setTimeout(()=>{
-          this.innerHTML = '<i class="fas fa-copy"></i>';
+          this.innerHTML = original;
           this.classList.remove('btn-success');
           this.classList.add('btn-light');
-        }, 900);
+        }, 1000);
       });
     });
   });
+
+  var statusEndpoint = {{ status_api | tojson }};
+  var btnRefresh = document.getElementById('btn-refresh');
+  var systemSkeleton = document.querySelector('[data-system-skeleton]');
+  var systemContent = document.querySelector('[data-system-content]');
+  var systemError = document.querySelector('[data-system-error]');
+  var routeSkeleton = document.querySelector('[data-route-skeleton]');
+  var routeContent = document.querySelector('[data-route-content]');
+  var routeError = document.querySelector('[data-route-error]');
+
+  function show(el){ el && el.classList.remove('d-none'); }
+  function hide(el){ el && el.classList.add('d-none'); }
+
+  function safeValue(value, fallback){
+    return (value === null || value === undefined) ? fallback : value;
+  }
+
+  function escapeHtml(value){
+    return String(safeValue(value, '-'))
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function setSystemLoading(){
+    show(systemSkeleton);
+    hide(systemContent);
+    hide(systemError);
+  }
+
+  function setSystemError(message){
+    hide(systemSkeleton);
+    hide(systemContent);
+    systemError.textContent = message || 'Data system tidak dapat dimuat.';
+    show(systemError);
+  }
+
+  function setRouteLoading(){
+    show(routeSkeleton);
+    hide(routeContent);
+    hide(routeError);
+  }
+
+  function setRouteError(message){
+    hide(routeSkeleton);
+    hide(routeContent);
+    routeError.textContent = message || 'Data route engine tidak dapat dimuat.';
+    show(routeError);
+  }
+
+  function renderInfoBox(label, value){
+    return '<div class="col-md-6"><div class="info-box">'
+      + '<span class="info-label">' + escapeHtml(label) + '</span>'
+      + '<div class="info-value">' + escapeHtml(value) + '</div>'
+      + '</div></div>';
+  }
+
+  function renderSystem(system){
+    if (!system){
+      setSystemError('Data system tidak tersedia.');
+      return;
+    }
+    var rows = [
+      renderInfoBox('Hostname', system.hostname || '-'),
+      renderInfoBox('Model', system.model || '-'),
+      renderInfoBox('OS Version', system.os_version || '-'),
+      renderInfoBox('Serial Number', system.serial_number || '-')
+    ];
+    systemContent.innerHTML = '<div class="row g-3">' + rows.join('') + '</div>';
+    hide(systemSkeleton);
+    hide(systemError);
+    show(systemContent);
+  }
+
+  function renderRoute(route){
+    if (!route){
+      setRouteError('Data route engine tidak tersedia.');
+      return;
+    }
+    var statusText = route.status || 'Unknown';
+    var normalized = statusText.toLowerCase();
+    var statusClass = 'secondary';
+    if (normalized.includes('ok') || normalized.includes('online')) statusClass = 'success';
+    else if (normalized.includes('degrad') || normalized.includes('warn')) statusClass = 'warning';
+    else if (normalized.includes('fail') || normalized.includes('down')) statusClass = 'danger';
+
+    var cpu = route.cpu || {};
+    var load = cpu.load_average || {};
+    var memory = route.memory || {};
+    var temp = route.temperature || {};
+    var uptime = route.uptime || {};
+    var userP = safeValue(cpu.user, 0);
+    var sysP = safeValue(cpu.system, 0);
+    var idleP = safeValue(cpu.idle, 0);
+    var buf = safeValue(memory.buffer_utilization, 0);
+
+    var html = ''
+      + '<div class="d-flex flex-wrap align-items-center gap-2 mb-3">'
+      + '<span class="route-chip text-' + statusClass + '"><i class="fas fa-circle"></i> ' + escapeHtml(statusText) + '</span>'
+      + (uptime.up_time ? '<span class="route-chip"><i class="fas fa-clock"></i>' + escapeHtml(uptime.up_time) + '</span>' : '')
+      + '</div>'
+      + '<div class="row g-3">'
+      + '<div class="col-md-6"><div class="info-box"><span class="info-label">Temperature</span><div class="info-value">'
+      + escapeHtml(temp.text || '-')
+      + (temp.celsius !== undefined && temp.celsius !== null ? '<small class="text-muted ms-1">(' + escapeHtml(temp.celsius) + '°C)</small>' : '')
+      + '</div></div></div>'
+      + '<div class="col-md-6"><div class="info-box"><span class="info-label">Model</span><div class="info-value">'
+      + escapeHtml(route.model || '-') + '</div></div></div>'
+      + '<div class="col-md-12"><div class="info-box"><span class="info-label">CPU Distribution</span>'
+      + '<div class="progress" style="height: 10px;">'
+      + '<div class="progress-bar bg-primary" style="width:' + userP + '%"></div>'
+      + '<div class="progress-bar bg-info" style="width:' + sysP + '%"></div>'
+      + '<div class="progress-bar bg-secondary" style="width:' + idleP + '%"></div>'
+      + '</div>'
+      + '<div class="small text-muted mt-2">User ' + userP + '% • System ' + sysP + '% • Idle ' + idleP + '%</div>'
+      + '</div></div>'
+      + '<div class="col-md-6"><div class="info-box"><span class="info-label">Load Average</span>'
+      + '<div class="d-flex flex-wrap gap-2">'
+      + '<span class="route-chip">1m ' + escapeHtml(load.one || '0') + '</span>'
+      + '<span class="route-chip">5m ' + escapeHtml(load.five || '0') + '</span>'
+      + '<span class="route-chip">15m ' + escapeHtml(load.fifteen || '0') + '</span>'
+      + '</div></div></div>'
+      + '<div class="col-md-6"><div class="info-box"><span class="info-label">Memory</span>'
+      + '<div class="info-value mb-1">DRAM ' + escapeHtml(memory.dram || '-') + ' <span class="text-muted">/ ' + escapeHtml(memory.installed || '-') + '</span></div>'
+      + '<div class="progress" style="height: 6px;"><div class="progress-bar" style="width:' + buf + '%"></div></div>'
+      + '<small class="text-muted">Buffer Utilization ' + buf + '%</small>'
+      + '</div></div>'
+      + '<div class="col-md-12"><div class="info-box"><span class="info-label">Uptime</span>'
+      + '<div class="info-value mb-1">' + escapeHtml(uptime.up_time || '-') + '</div>'
+      + (uptime.start_time ? '<small class="text-muted d-block">Since ' + escapeHtml(uptime.start_time) + '</small>' : '')
+      + (uptime.last_reboot_reason ? '<small class="text-muted d-block">Last reboot: ' + escapeHtml(uptime.last_reboot_reason) + '</small>' : '')
+      + '</div></div>'
+      + '</div>';
+
+    routeContent.innerHTML = html;
+    hide(routeSkeleton);
+    hide(routeError);
+    show(routeContent);
+  }
+
+  function requestStatus(){
+    if (!statusEndpoint) {
+      return Promise.reject(new Error('Status endpoint tidak tersedia'));
+    }
+    if (window.fetch){
+      return fetch(statusEndpoint, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+        .then(function(response){
+          if (!response.ok) throw new Error('HTTP ' + response.status);
+          return response.json();
+        });
+    }
+    return new Promise(function(resolve, reject){
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', statusEndpoint, true);
+      xhr.withCredentials = true;
+      xhr.setRequestHeader('Accept', 'application/json');
+      xhr.onreadystatechange = function(){
+        if (xhr.readyState === 4){
+          if (xhr.status >= 200 && xhr.status < 300){
+            try {
+              resolve(JSON.parse(xhr.responseText || '{}'));
+            } catch (err) {
+              reject(err);
+            }
+          } else {
+            reject(new Error('HTTP ' + xhr.status));
+          }
+        }
+      };
+      xhr.onerror = function(){ reject(new Error('Network error')); };
+      xhr.send();
+    });
+  }
+
+  function loadStatus(){
+    if (!statusEndpoint) {
+      console.warn('Status endpoint tidak tersedia.');
+      return;
+    }
+    setSystemLoading();
+    setRouteLoading();
+    if (btnRefresh){
+      btnRefresh.disabled = true;
+      btnRefresh.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>Memuat...';
+    }
+
+    function finalize(){
+      if (btnRefresh){
+        btnRefresh.disabled = false;
+        btnRefresh.innerHTML = '<span class="me-1"><i class="fas fa-rotate"></i></span>Muat ulang data';
+      }
+    }
+
+    requestStatus()
+      .then(function(data){
+        if (data.success){
+          renderSystem(data.system);
+          renderRoute(data.route_engine);
+        } else {
+          setSystemError(data.message);
+          setRouteError(data.message);
+        }
+        finalize();
+      })
+      .catch(function(err){
+        console.error('Gagal memuat status device', err);
+        setSystemError('Gagal memuat data: ' + err);
+        setRouteError('Gagal memuat data: ' + err);
+        finalize();
+      });
+  }
+
+  if (btnRefresh){
+    btnRefresh.addEventListener('click', function(e){
+      e.preventDefault();
+      loadStatus();
+    });
+  }
+
+  loadStatus();
+});
 </script>
 {% endblock %}

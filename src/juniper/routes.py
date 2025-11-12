@@ -155,55 +155,51 @@ def device_status(device_id):
     if not device:
         flash('Device tidak ditemukan!', 'danger')
         return redirect(url_for('juniper.devices'))
-    
-    password = get_juniper_device_password(device_id)
+    status_api = url_for('juniper.api_device_status', device_id=device_id)
+    return render_template('juniper/status.html', device=device, status_api=status_api)
 
-    rest_args = _rest_connection_kwargs(
-        device.get('api_port'),
-        device.get('api_use_ssl'),
-        device.get('api_verify_ssl')
-    )
 
-    sys_success, sys_overview = get_juniper_system_info(
-        ip_address=device['ip_address'],
-        username=device['username'],
-        password=password,
-        **rest_args
-    )
+@juniper_bp.route('/api/device/<int:device_id>/status')
+@login_required
+def api_device_status(device_id):
+    try:
+        device = get_juniper_device(device_id)
+        if not device:
+            return jsonify({'success': False, 'message': 'Device tidak ditemukan'})
 
-    sys_data = None
-    re_data = None
-    sys_error = None
-    re_error = None
+        password = get_juniper_device_password(device_id)
+        if not password:
+            return jsonify({'success': False, 'message': 'Password device tidak tersedia'})
 
-    if sys_success and isinstance(sys_overview, dict):
-        sys_data = sys_overview.get('system')
-        re_data = sys_overview.get('route_engine')
-
-        if isinstance(sys_data, dict) and 'error' in sys_data:
-            sys_error = sys_data['error']
-            sys_data = None
-
-        if isinstance(re_data, dict) and 'error' in re_data:
-            re_error = re_data['error']
-            re_data = None
-    else:
-        # Jika koneksi awal gagal, tampilkan pesan informatif untuk kedua bagian.
-        error_message = (
-            f"Gagal terhubung ke device {device['name']} ({device['ip_address']}). "
-            "Pastikan device dapat dijangkau dan kredensial sudah benar."
+        rest_args = _rest_connection_kwargs(
+            device.get('api_port'),
+            device.get('api_use_ssl'),
+            device.get('api_verify_ssl')
         )
-        sys_error = error_message
-        re_error = error_message
 
-    return render_template(
-        'juniper/status.html',
-        device=device,
-        sys_data=sys_data,
-        re_data=re_data,
-        sys_error=sys_error,
-        re_error=re_error
-    )
+        sys_success, sys_overview = get_juniper_system_info(
+            ip_address=device['ip_address'],
+            username=device['username'],
+            password=password,
+            **rest_args
+        )
+
+        if sys_success and isinstance(sys_overview, dict):
+            sys_data = sys_overview.get('system')
+            re_data = sys_overview.get('route_engine')
+
+            result = {'success': True, 'system': sys_data, 'route_engine': re_data}
+        else:
+            result = {
+                'success': False,
+                'message': (
+                    f"Gagal terhubung ke device {device['name']} ({device['ip_address']}). "
+                    "Pastikan device dapat dijangkau dan kredensial sudah benar."
+                )
+            }
+        return jsonify(result)
+    except Exception as exc:
+        return jsonify({'success': False, 'message': f'Error: {exc}'})
 
 
 @juniper_bp.route('/device/<int:device_id>/bgp')
