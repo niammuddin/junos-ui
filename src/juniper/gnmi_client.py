@@ -539,6 +539,7 @@ def stop_gnmi_monitoring(device_id: str) -> tuple[bool, str]:
 
 def get_gnmi_traffic_data(device_id: str) -> Dict:
     """Get current traffic data from gNMI client"""
-    if device_id in _gnmi_clients:
-        return _gnmi_clients[device_id].get_current_traffic_data()
+    client = _gnmi_clients.get(device_id)
+    if not client:
         return {}
+    return client.get_current_traffic_data()

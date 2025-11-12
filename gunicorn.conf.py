@@ -11,8 +11,10 @@ def _int_env(name: str, default: int) -> int:
 
 
 bind = os.environ.get("GUNICORN_BIND", f"0.0.0.0:{os.environ.get('PORT', 5000)}")
-workers = _int_env("GUNICORN_WORKERS", multiprocessing.cpu_count() * 2 + 1)
-worker_class = os.environ.get("GUNICORN_WORKER_CLASS", "sync")
+# gNMI monitoring keeps state in-process, so default to a single worker unless explicitly overridden.
+workers = _int_env("GUNICORN_WORKERS", 1)
+threads = _int_env("GUNICORN_THREADS", max(4, multiprocessing.cpu_count()))
+worker_class = os.environ.get("GUNICORN_WORKER_CLASS", "gthread" if threads > 1 else "sync")
 timeout = _int_env("GUNICORN_TIMEOUT", 90)
 graceful_timeout = _int_env("GUNICORN_GRACEFUL_TIMEOUT", 30)
 keepalive = _int_env("GUNICORN_KEEPALIVE", 5)
